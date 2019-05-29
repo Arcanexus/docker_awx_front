@@ -13,11 +13,11 @@ def index():
 def hello(phrase):
    return phrase
 
-@app.route('/json')
 class HelloWorld(Resource):
     def get(self):
         return {'hello': 'world'}
 
+@app.route('/json')
 api.add_resource(HelloWorld, '/')
 
 if __name__ == '__main__':
