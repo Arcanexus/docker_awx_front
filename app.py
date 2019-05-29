@@ -1,5 +1,5 @@
 # app.py - a minimal flask api using flask_restful
-from flask import Flask
+from flask import Flask,jsonify
 from flask_restful import Resource, Api
 
 app = Flask(__name__)
@@ -15,7 +15,7 @@ def hello(phrase):
 
 @app.route('/json')
 def index_json():
-   return {'hello': 'world'}
+   return jsonify({'hello': 'world'})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
