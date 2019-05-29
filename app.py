@@ -13,12 +13,9 @@ def index():
 def hello(phrase):
    return phrase
 
-class HelloWorld(Resource):
-    def get(self):
-        return {'hello': 'world'}
-
 @app.route('/json')
-api.add_resource(HelloWorld, '/json')
+def get(self):
+   return {'hello': 'world'}
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
