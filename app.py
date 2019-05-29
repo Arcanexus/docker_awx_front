@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-from flask import Flask,jsonify
+from flask import Flask,jsonify,render_template
 from flask_restful import Resource, Api
 
 app = Flask(__name__)
