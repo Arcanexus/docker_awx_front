@@ -8,7 +8,7 @@ api = Api(app)
 @app.route('/')
 def home():
    mots = ["bonjour", "à", "toi,", "anonyme citoyen."]
-   return render_template('index.html', titre="Bienvenue !", mots=mots)
+   return render_template('templates/index.html', titre="Bienvenue !", mots=mots)
 
 @app.route('/hello/<phrase>')
 def hello(phrase):
