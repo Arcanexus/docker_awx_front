@@ -14,7 +14,7 @@ def hello(phrase):
    return phrase
 
 @app.route('/json')
-def get(self):
+def index():
    return {'hello': 'world'}
 
 if __name__ == '__main__':
