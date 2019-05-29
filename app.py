@@ -1,4 +1,5 @@
-# app.py - a minimal flask api using flask_restful
+# -*- coding:utf-8 -*-
+
 from flask import Flask,jsonify
 from flask_restful import Resource, Api
 
