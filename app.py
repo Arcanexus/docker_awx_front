@@ -5,6 +5,15 @@ from flask_restful import Resource, Api
 app = Flask(__name__)
 api = Api(app)
 
+@app.route('/')
+def index():
+   return "Ceci est la page d'accueil."
+   
+@app.route('/hello/<phrase>')
+def hello(phrase):
+   return phrase
+
+@app.route('/json')
 class HelloWorld(Resource):
     def get(self):
         return {'hello': 'world'}
