@@ -18,7 +18,7 @@ class HelloWorld(Resource):
         return {'hello': 'world'}
 
 @app.route('/json')
-api.add_resource(HelloWorld, '/')
+api.add_resource(HelloWorld, '/json')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
