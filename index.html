@@ -12,5 +12,12 @@
             <li>{{ mot }}</li>
         {% endfor %}
         </ul>
+        <form method="POST" action="/">
+            {{ form.hidden_tag() }}
+            {{ form.name.label }} {{ form.name(size=20) }}
+            <br/>
+            {{ form.age.label }} {{ form.age(size=3) }}
+        <input type="submit" value="Go">
+</form>
     </body>
 </html>
