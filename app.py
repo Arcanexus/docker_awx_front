@@ -8,7 +8,7 @@ from wtforms.validators import DataRequired
 
 class MyForm(FlaskForm):
    name = StringField('name', validators=[DataRequired()])
-   age = InterField('age', validators=[DataRequired()])
+   age = IntegerField('age', validators=[DataRequired()])
 
 app = Flask(__name__)
 api = Api(app)
