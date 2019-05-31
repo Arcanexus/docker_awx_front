@@ -10,7 +10,7 @@ class MyForm(FlaskForm):
    name = StringField('name', validators=[DataRequired()])
    age = IntegerField('age', validators=[DataRequired()])
 
-app = Flask(__name__)
+app = Flask(__name__,template_folder='./')
 api = Api(app)
 
 @app.route('/')
@@ -29,7 +29,6 @@ def index_json():
 @app.errorhandler(404)
 def ma_page_404(error):
     return "Hahaha 404, N00b !", 404
-
    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
