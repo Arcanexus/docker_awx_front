@@ -7,17 +7,30 @@
 
     <body>
         <h1>{{ titre }}</h1>
-        <ul>
         {% for mot in mots %}
-            <li>{{ mot }}</li>
+            {{ mot }}
         {% endfor %}
-        </ul>
         <form method="POST" action="/">
-            {{ form.hidden_tag() }}
+
             {{ form.name.label }} {{ form.name(size=20) }}
             <br/>
             {{ form.age.label }} {{ form.age(size=3) }}
-        <input type="submit" value="Go">
+            <br/>
+            {{ form.remember_me() }} {{ form.remember_me.label }}</p>
+            <p>{{ form.submit() }}</p>
 </form>
-    </body>
+
+<hr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+
+</body>
 </html>
