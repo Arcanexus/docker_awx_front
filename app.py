@@ -2,6 +2,13 @@
 
 from flask import Flask,jsonify,render_template
 from flask_restful import Resource, Api
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField
+from wtforms.validators import DataRequired
+
+class MyForm(FlaskForm):
+   name = StringField('name', validators=[DataRequired()])
+   age = InterField('age', validators=[DataRequired()])
 
 app = Flask(__name__)
 api = Api(app)
@@ -9,7 +16,7 @@ api = Api(app)
 @app.route('/')
 def home():
    mots = ["bonjour", "à", "toi,", "anonyme citoyen."]
-   return render_template('index.html', titre="Bienvenue !", mots=mots)
+   return render_template('./index.html', titre="Bienvenue !", mots=mots)
 
 @app.route('/hello/<phrase>')
 def hello(phrase):
