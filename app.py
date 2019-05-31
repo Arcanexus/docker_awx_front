@@ -16,7 +16,7 @@ class MyForm(FlaskForm):
    name = StringField('name', validators=[DataRequired()])
    age = IntegerField('age', validators=[DataRequired()])
 
-app = Flask(__name__,template_folder='./')
+app = Flask(__name__,template_folder='./templates/')
 api = Api(app)
 
 @app.route('/')
