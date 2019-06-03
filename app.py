@@ -1,10 +1,9 @@
 # -*- coding:utf-8 -*-
 
-from flask import Flask,jsonify,render_template
+from flask import Flask,jsonify,render_template, request, redirect, flash
 from flask_restful import Resource, Api
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, BooleanField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import StringField, IntegerField, BooleanField, SubmitField, validators
 import platform
 
 app = Flask(__name__,template_folder='./templates/')
@@ -12,19 +11,20 @@ app.config['SECRET_KEY'] = 'apple pie'
 api = Api(app)
 
 class MyForm(FlaskForm):
-   name = StringField('name', validators=[DataRequired()])
-   age = IntegerField('age', validators=[DataRequired()])
-   remember_me = BooleanField('Remember Me')
-   submit = SubmitField('Sign In')
+   name = StringField('Nom', validators=[validators.DataRequired()])
+   age = IntegerField('Âge', [validators.DataRequired(), validators.Length(min=1, max=3)])
+   remember_me = BooleanField('Se souvenir de moi')
+   submit = SubmitField('Valider')
 
 @app.route('/', methods=['POST','GET'])
 def home():
-  mots = ["bonjour", "à", "toi,", "anonyme citoyen."]
+  mots = ["Bonjour", "à", "toi,", "anonyme citoyen."]
   form = MyForm()
-	
-  if form.validate_on_submit():
-    flash('Login requested for user {}, remember_me={}'.format(form.name.data, form.remember_me.data))
-    return redirect('/hello/' + form.name.data + ', you have ' + form.age.data + ' years old.')
+
+  if form.submit.data:
+    flash('Bienvenue {}, âgé de {}. {forget}'.format(form.name.data, form.age.data, forget="Nous ne toublieront pas." if form.remember_me.data else ""))
+    return redirect('/')
+    # return redirect('/hello/' + form.name.data + ', you have ' + str(form.age.data) + ' years old.')
   else:
     return render_template('index.html', titre="Bienvenue !", mots=mots, form=form)
 
