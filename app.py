@@ -6,6 +6,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, BooleanField, SubmitField
 from wtforms.validators import DataRequired
 import sys
+import platform
+
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
@@ -37,6 +39,10 @@ def hello(phrase):
 @app.route('/json')
 def index_json():
    return jsonify({'hello': 'world'})
+
+@app.route('/version')
+def index_version():
+   return platform.python_version()
 
 @app.errorhandler(404)
 def ma_page_404(error):
