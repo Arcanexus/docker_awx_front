@@ -4,11 +4,14 @@ from flask import Flask,jsonify,render_template, request, redirect, flash
 from flask_restful import Resource, Api
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, BooleanField, SubmitField, validators
+from json import dumps
 import platform
+import requests
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie'
 api = Api(app)
+url = 'http://127.0.0.1:5002/'
 
 class MyForm(FlaskForm):
    name = StringField('Nom', validators=[validators.DataRequired()])
@@ -23,6 +26,17 @@ def home():
 
   if form.submit.data:
     flash('Bienvenue {}, âgé de {}. {forget}'.format(form.name.data, form.age.data, forget="Nous ne toublieront pas." if form.remember_me.data else ""))
+    body = {}
+    body['name'] = form.name.data
+    body['age'] = form.age.data
+    if form.remember_me.data:
+      body['remember_me'] = "Nous ne toublieront pas."
+    else:
+      body['remember_me'] = ""
+    
+    response1 = requests.post(url, data=dumps(body), allow_redirects=True)
+    response2 = requests.get(url, allow_redirects=True)
+    
     return redirect('/')
     # return redirect('/hello/' + form.name.data + ', you have ' + str(form.age.data) + ' years old.')
   else:
@@ -42,7 +56,7 @@ def index_version():
 
 @app.errorhandler(404)
 def ma_page_404(error):
-    return "Hahaha 404, N00b !", 404
+    return render_template('404.html', titre="Hahaha 404, N00b !"), 404
 
    
 if __name__ == '__main__':
