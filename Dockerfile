@@ -1,7 +1,7 @@
-# Dockerfile - this is a comment. Delete me if you want.
-FROM python:2.7
+FROM python:3.7.3
 COPY . /app
 WORKDIR /app
+RUN apt-get -y update && apt-get -y upgrade && apt-get install -y libsasl2-dev python-dev libldap2-dev libssl-dev && rm -rf /var/lib/apt/lists/*
 ENV http_proxy http://10.20.102.6:3128
 ENV https_proxy http://10.20.102.6:3128
 ENV HTTP_PROXY http://10.20.102.6:3128
