@@ -11,27 +11,67 @@
         {% for mot in mots %}
             {{ mot }}
         {% endfor %}
+        
+        
+        <p><form method="POST" action="/">
+            {% if bouchon %}
+                {{ resetform.resetdb() }}
+            {% endif %}
+        </form></p>
+        
+
         <form method="POST" action="/">
+            <div class="table-responsive"><table class="table table-dark table-striped table-hover">
+            <thead>
+                <tr>
+                    <th colspan="4"><center>New VM configuration</center></th>
+                </tr>
+            </thead>
+            <tr>
+                <th rowspan="2">Environment parameters</th>
+                <td>{{ form.target_env.label }} : </td><td>{{ form.target_env() }}</td>
+            </tr>
+            <tr>
+                <td>{{ form.target_site.label }} : </td><td>{{ form.target_site() }}</td>
+            </tr>
+            <tr>
+                <th rowspan="2">Application parameters</th>
+                <td>{{ form.app_trigram.label }} : </td><td>{{ form.app_trigram(size=3) }}</td>
+            </tr>
+            <tr>
+                <td>{{ form.vm_name.label }} : </td><td>{{ form.vm_name(size=20) }}</td>
+            </tr>
+            <tr>
+                <th rowspan="5">VM parameters</th>
+                <td>{{ form.vm_owner_domain.label }} : </td><td>{{ form.vm_owner_domain() }}\{{ form.vm_owner_gaia(size=20) }}</td>
+            </tr>
+            <tr><td>{{ form.vm_os.label }} : </td><td>{{ form.vm_os() }}</td></tr>
+            <tr><td>{{ form.vm_cpu_count.label }} : </td><td>{{ form.vm_cpu_count() }}</td></tr>
+            <tr><td>{{ form.vm_ram_size.label }} : </td><td>{{ form.vm_ram_size() }}MB</td></tr>
+            <tr><td>{{ form.vm_disk_size.label }} : </td><td>{{ form.vm_disk_size(size=3) }}GB</td></tr>
+    
+            <tr>
+                <td>{{ form.vm_count.label }} : {{ form.vm_count(size=3) }} {{ form.create_button() }}</td>
+            </tr>
+            </table></div>
+        </form>
 
-            {{ form.name.label }} {{ form.name(size=20) }}
-            <br/>
-            {{ form.age.label }} {{ form.age(size=3) }}
-            <br/>
-            {{ form.remember_me() }} {{ form.remember_me.label }}</p>
-            <p>{{ form.submit() }}</p>
-</form>
-
-<hr>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-
+        <hr />
+        
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+        <pre>
+    {% for message in messages %}
+        {{ message }}
+    {% endfor %}
+        </pre>
+{% endif %}
+{% endwith %}
+{% block content %}{% endblock %}
+        <hr />
+        <pre>
+        {{ parsed }}
+        </pre>
+        <hr />
 </body>
 </html>
