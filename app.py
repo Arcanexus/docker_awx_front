@@ -12,7 +12,8 @@ app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 api = Api(app)
 bouchon = True
-awx_url = 'http://127.0.0.1:5002'
+awx_url = os.environ['AWX_URL']
+#awx_url = 'http://127.0.0.1:5002'
 awx_token = '20wXXDKw4O0q3Z5TNX6BL9IuRN4HbI' # local awx admin test token
 
 class MyForm(FlaskForm):
