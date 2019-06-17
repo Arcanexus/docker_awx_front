@@ -7,6 +7,8 @@ from wtforms import StringField, IntegerField, BooleanField, SubmitField, valida
 from json import dumps, loads
 import platform
 import requests
+import ldap
+import os
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
