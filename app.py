@@ -80,8 +80,8 @@ def home():
     response3 = session.post(awx_url, data=dumps(payload), headers=headers, allow_redirects=True)
     print(response3.text)
     response4 = session.get(awx_url, allow_redirects=True)
-    #parsed = loads(response4.text)    
-    #flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
+    parsed = loads(response4.text)    
+    flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
 
     return redirect('/')
     
