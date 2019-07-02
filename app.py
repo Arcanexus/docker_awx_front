@@ -90,7 +90,7 @@ def home():
     session.trust_env = False
     
     list_wf_templates = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers)
-    res_json=json.loads(list_wf_templates.content)
+    res_json=loads(list_wf_templates.content)
     output_dict = [x for x in res_json['results'] if x['name'] == 'Create Windows VM On Premise']
     create_vm_workflow_id = output_dict[0]['id']
     print('Id du workflow : ' + str(create_vm_workflow_id))
