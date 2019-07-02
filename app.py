@@ -88,7 +88,14 @@ def home():
     # Bouchon
     session = requests.Session()
     session.trust_env = False
-    response3 = session.post(awx_url, data=dumps(payload), headers=headers, allow_redirects=True)
+    
+    list_wf_templates = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers)
+    res_json=json.loads(list_wf_templates.content)
+    output_dict = [x for x in res_json['results'] if x['name'] == 'Create Windows VM On Premise']
+    create_vm_workflow_id = output_dict[0]['id']
+    print('Id du workflow : ' + str(create_vm_workflow_id))
+    
+    response3 = session.post(awx_url + '/api/v2/workflow_job_templates/' + str(create_vm_workflow_id) + '/launch/', data=dumps(payload), headers=headers, allow_redirects=True)
     print(response3.text)
     if bouchon == 'True':
       response4 = session.get(awx_url, allow_redirects=True)
