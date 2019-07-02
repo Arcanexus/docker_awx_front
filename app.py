@@ -1,5 +1,5 @@
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-
 from flask import Flask,jsonify,render_template, request, redirect, flash
 from flask_restful import Resource, Api
 from flask_wtf import FlaskForm
@@ -63,16 +63,18 @@ def home():
     headers['Content-Type'] = "application/json"
     headers['Accept'] = "application/json"
 
+    extra_vars = {}
     payload = {}
-    payload['target_env'] = createvmform.target_env.data
-    payload['site'] = createvmform.target_site.data
-    payload['application_trigram'] = createvmform.app_trigram.data
-    payload['owner'] = createvmform.vm_owner_domain.data + '\\' + createvmform.vm_owner_gaia.data
-    payload['operating_system'] = createvmform.vm_os.data
-    payload['cpu_count'] = int(createvmform.vm_cpu_count.data)
-    payload['ram_size'] = int(createvmform.vm_ram_size.data)
-    payload['disk_size'] = int(createvmform.vm_disk_size.data)
-    payload['vmname'] = createvmform.vm_name.data
+    extra_vars['target_env'] = createvmform.target_env.data
+    extra_vars['site'] = createvmform.target_site.data
+    extra_vars['application_trigram'] = createvmform.app_trigram.data
+    extra_vars['owner'] = createvmform.vm_owner_domain.data + '\\' + createvmform.vm_owner_gaia.data
+    extra_vars['operating_system'] = createvmform.vm_os.data
+    extra_vars['cpu_count'] = str(createvmform.vm_cpu_count.data)
+    extra_vars['ram_size'] = str(createvmform.vm_ram_size.data)
+    extra_vars['disk_size'] = str(createvmform.vm_disk_size.data)
+    extra_vars['vmname'] = createvmform.vm_name.data
+    payload['extra_vars'] = extra_vars
 
     # Bouchon
     session = requests.Session()
