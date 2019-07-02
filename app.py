@@ -7,7 +7,7 @@ from wtforms import StringField, IntegerField, BooleanField, SubmitField, valida
 from json import dumps, loads
 import platform
 import requests
-# import ldap
+import ldap
 import os
 
 app = Flask(__name__,template_folder='./templates/')
@@ -117,4 +117,4 @@ def ma_page_404(error):
     return render_template('404.html', titre="Hahaha 404, N00b !"), 404
    
 if __name__ == '__main__':
-  app.run(debug=True, host='0.0.0.0', port='5003')
+  app.run(debug=True, host='0.0.0.0', port='5001')
