@@ -13,11 +13,21 @@ import os
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 api = Api(app)
-bouchon = True
-awx_url = os.environ['AWX_URL']
-#awx_url = 'http://127.0.0.1:5002'
-awx_token = os.environ['AWX_TOKEN'] # local awx admin test token
-#awx_token = 'Vj4L9wce9yLBwFl3LuDzUm9NKnCN0R' # local awx admin test token
+
+if "BOUCHON" in os.environ:
+  bouchon = os.environ['BOUCHON']
+else:
+  bouchon = False
+
+if "AWX_URL" in os.environ:
+  awx_url = os.environ['AWX_URL']
+else:
+  awx_url = 'http://127.0.0.1:5002' # default bouchon
+
+if "AWX_TOKEN" in os.environ:
+  awx_token = os.environ['AWX_TOKEN']
+else
+  awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
 
 class MyForm(FlaskForm):
    name = StringField('Nom', validators=[validators.DataRequired()])
