@@ -26,7 +26,7 @@ else:
 
 if "AWX_TOKEN" in os.environ:
   awx_token = os.environ['AWX_TOKEN']
-else
+else:
   awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
 
 class MyForm(FlaskForm):
