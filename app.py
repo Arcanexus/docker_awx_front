@@ -7,17 +7,16 @@ from wtforms import StringField, IntegerField, BooleanField, SubmitField, valida
 from json import dumps, loads
 import platform
 import requests
-import ldap
+# import ldap
 import os
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 api = Api(app)
-
 if "BOUCHON" in os.environ:
   bouchon = os.environ['BOUCHON']
 else:
-  bouchon = False
+  bouchon = "False"
 
 if "AWX_URL" in os.environ:
   awx_url = os.environ['AWX_URL']
@@ -91,7 +90,7 @@ def home():
     session.trust_env = False
     response3 = session.post(awx_url, data=dumps(payload), headers=headers, allow_redirects=True)
     print(response3.text)
-    if bouchon:
+    if bouchon == 'True':
       response4 = session.get(awx_url, allow_redirects=True)
       parsed = loads(response4.text)    
       flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
@@ -118,4 +117,4 @@ def ma_page_404(error):
     return render_template('404.html', titre="Hahaha 404, N00b !"), 404
    
 if __name__ == '__main__':
-  app.run(debug=True, host='0.0.0.0', port='5001')
+  app.run(debug=True, host='0.0.0.0', port='5003')
