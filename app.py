@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from flask import Flask,jsonify,render_template, request, redirect, flash
-from flask_restful import Resource, Api
+from flask import Flask,jsonify,render_template, request, redirect, flash, Blueprint
+from flask_restplus import Resource, Api, Namespace
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, BooleanField, SubmitField, validators, RadioField, SelectField, SelectMultipleField
 from json import dumps, loads
@@ -12,7 +12,12 @@ import os
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
-api = Api(app)
+blueprint = Blueprint('api', __name__, url_prefix='/api')
+api = Api(blueprint, version='1.0', title='GIAC API', description='GIAC automation RESTfull API')
+ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
+ns_azure = api.namespace('azure', description='Operation for VM on Azure')
+app.register_blueprint(blueprint)
+
 if "BOUCHON" in os.environ:
   bouchon = os.environ['BOUCHON']
 else:
@@ -29,10 +34,10 @@ else:
   awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
 
 class MyForm(FlaskForm):
-   name = StringField('Nom', validators=[validators.DataRequired()])
-   age = IntegerField('Âge', [validators.DataRequired(), validators.Length(min=1, max=3)])
-   remember_me = BooleanField('Se souvenir de moi')
-   submit = SubmitField('Valider')
+  name = StringField('Nom', validators=[validators.DataRequired()])
+  age = IntegerField('Âge', [validators.DataRequired(), validators.Length(min=1, max=3)])
+  remember_me = BooleanField('Se souvenir de moi')
+  submit = SubmitField('Valider')
 
 class CreateVMForm(FlaskForm):
   target_env = SelectField('Target Environment', choices=[('Development', 'Development'), ('Homologation', 'Homologation'), ('Production', 'Production')], default='Development', validators=[validators.DataRequired()])
@@ -49,7 +54,7 @@ class CreateVMForm(FlaskForm):
   create_button = SubmitField('Create')
 
 class ResetForm(FlaskForm):
-   resetdb = SubmitField(label='ResetDB')
+  resetdb = SubmitField(label='ResetDB')
 
 @app.route('/', methods=['POST','GET'])
 def home():
@@ -107,21 +112,34 @@ def home():
   else:
     return render_template('index.html', titre="Bienvenue !", mots=mots, form=createvmform, resetform=resetform, bouchon=bouchon)
 
+@ns_onpremise.route('/')
+class OnPremise(Resource):            #  Create a RESTful resource
+  def get(self):                     #  Create GET endpoint
+    return {'hello': 'On Premise'}
+
+  def post(self):                     #  Create POST endpoint
+    return {'hello': 'On Premise'}
+
+@ns_azure.route('/')
+class Azure(Resource):            #  Create a RESTful resource
+    def get(self):                     #  Create GET endpoint
+        return {'hello': 'Azure'}
+
 @app.route('/hello/<phrase>')
 def hello(phrase):
-   return phrase
+  return phrase
 
 @app.route('/json')
 def index_json():
-   return jsonify({'hello': 'world'})
+  return jsonify({'hello': 'world'})
 
 @app.route('/version')
 def index_version():
-   return platform.python_version()
+  return platform.python_version()
 
 @app.errorhandler(404)
 def ma_page_404(error):
-    return render_template('404.html', titre="Hahaha 404, N00b !"), 404
-   
+  return render_template('404.html', titre="Hahaha 404, N00b !"), 404
+  
 if __name__ == '__main__':
   app.run(debug=True, host='0.0.0.0', port='5001')
