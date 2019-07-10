@@ -4,4 +4,5 @@ flask-wtf
 flask-login
 Flask-LDAP
 flask-ldap3-login
+flask-restplus
 requests

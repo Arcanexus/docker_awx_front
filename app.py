@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 from flask import Flask,jsonify,render_template, request, redirect, flash, Blueprint
-from flask_restplus import Resource, Api, Namespace
+from flask_restplus import Resource, Api, Namespace, fields
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, BooleanField, SubmitField, validators, RadioField, SelectField, SelectMultipleField
 from json import dumps, loads
 import platform
 import requests
-import ldap
-import os
+# import ldap
+import os, sys
+from api import azure, onpremise, common
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
-blueprint = Blueprint('api', __name__, url_prefix='/api')
+blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
 api = Api(blueprint, version='1.0', title='GIAC API', description='GIAC automation RESTfull API')
 ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
 ns_azure = api.namespace('azure', description='Operation for VM on Azure')
@@ -26,12 +27,20 @@ else:
 if "AWX_URL" in os.environ:
   awx_url = os.environ['AWX_URL']
 else:
-  awx_url = 'http://127.0.0.1:5002' # default bouchon
-
+  #awx_url = 'http://127.0.0.1:5002' # default bouchon
+  awx_url = 'http://10.20.102.6'
 if "AWX_TOKEN" in os.environ:
   awx_token = os.environ['AWX_TOKEN']
 else:
-  awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
+  #awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
+  awx_token = 'IH8zKI3k46jCoLuy36ccOVzpht7XFG' # local awx admin test token
+
+# check AWX connection
+check_res = common.checkAWXconnection(awx_url=awx_url, awx_token=awx_token)
+if check_res != 200:
+  sys.exit("Impossible to connect to AWX [" + awx_url + "]")
+else:
+  print("Connected to AWX [" + awx_url + "]")
 
 class MyForm(FlaskForm):
   name = StringField('Nom', validators=[validators.DataRequired()])
@@ -53,6 +62,15 @@ class CreateVMForm(FlaskForm):
   vm_count = IntegerField('Count', default=1, validators=[validators.DataRequired(), validators.Regexp('^\d+$', message="Invalid format")])
   create_button = SubmitField('Create')
 
+class DeleteVMForm(FlaskForm):
+  vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
+  target_env = SelectField('Target Environment', choices=[('Development', 'Development'), ('Homologation', 'Homologation'), ('Production', 'Production')], default='Development', validators=[validators.DataRequired()])
+  delete_button = SubmitField('Delete')
+
+class GetInfosForm(FlaskForm):
+  wf_id = IntegerField('Id', validators=[validators.DataRequired()])
+  getinfos_button = SubmitField('Get Infos')
+
 class ResetForm(FlaskForm):
   resetdb = SubmitField(label='ResetDB')
 
@@ -62,8 +80,9 @@ def home():
   form = MyForm()
   resetform = ResetForm()
   createvmform = CreateVMForm()
+  deletevmform = DeleteVMForm()
+  getinfosform = GetInfosForm()
   
-
   if resetform.resetdb.data:
     session = requests.Session()
     session.trust_env = False
@@ -72,58 +91,136 @@ def home():
     return redirect('/')
 
   if createvmform.create_button.data:
-    headers = {}
-    headers['Authorization'] = "Bearer " + awx_token
-    headers['Content-Type'] = "application/json"
-    headers['Accept'] = "application/json"
-
+    
     extra_vars = {}
     payload = {}
     extra_vars['target_env'] = createvmform.target_env.data
     extra_vars['site'] = createvmform.target_site.data
     extra_vars['application_trigram'] = createvmform.app_trigram.data
-    extra_vars['owner'] = createvmform.vm_owner_domain.data + '\\' + createvmform.vm_owner_gaia.data
+    extra_vars['owner'] = createvmform.vm_owner_gaia.data
     extra_vars['operating_system'] = createvmform.vm_os.data
-    extra_vars['cpu_count'] = str(createvmform.vm_cpu_count.data)
-    extra_vars['ram_size'] = str(createvmform.vm_ram_size.data)
+    extra_vars['cpu_count'] = int(createvmform.vm_cpu_count.data)
+    extra_vars['ram_size'] = int(createvmform.vm_ram_size.data)
     extra_vars['disk_size'] = str(createvmform.vm_disk_size.data)
     extra_vars['vmname'] = createvmform.vm_name.data
     payload['extra_vars'] = extra_vars
 
     # Bouchon
-    session = requests.Session()
-    session.trust_env = False
+    result = onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
     
-    list_wf_templates = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers)
-    res_json=loads(list_wf_templates.content)
-    output_dict = [x for x in res_json['results'] if x['name'] == 'Create Windows VM On Premise']
-    create_vm_workflow_id = output_dict[0]['id']
-    print('Id du workflow : ' + str(create_vm_workflow_id))
-    
-    response3 = session.post(awx_url + '/api/v2/workflow_job_templates/' + str(create_vm_workflow_id) + '/launch/', data=dumps(payload), headers=headers, allow_redirects=True)
-    print(response3.text)
     if bouchon == 'True':
-      response4 = session.get(awx_url, allow_redirects=True)
-      parsed = loads(response4.text)    
+      session = requests.Session()
+      session.trust_env = False
+      bouchonContent = session.get(awx_url, allow_redirects=True)
+      parsed = loads(bouchonContent.text)    
       flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
+    else:
+      flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
 
-    return redirect('/')
+    return redirect('/#flash')
+  
+  elif deletevmform.delete_button.data:
     
+    extra_vars = {}
+    payload = {}
+    extra_vars['target_env'] = createvmform.target_env.data
+    extra_vars['vm_name'] = createvmform.vm_name.data
+    payload['extra_vars'] = extra_vars
+
+    result = onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    return redirect('/#flash')
+
+  elif getinfosform.getinfos_button.data:
+    result = onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
+    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    return redirect('/#flash')
+
   else:
-    return render_template('index.html', titre="Bienvenue !", mots=mots, form=createvmform, resetform=resetform, bouchon=bouchon)
+    return render_template('index.html', 
+      titre="GIAC Portal",
+      mots=mots,
+      form=createvmform,
+      resetform=resetform,
+      deletevmform=deletevmform,
+      getinfosform=getinfosform,
+      bouchon=bouchon)
+
+create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
+  'vmname': fields.String(description='The name of the VM'),
+  'target_env': fields.String(required=True, description='The target environment'),
+  'site': fields.String(required=True, description='The target site'),
+  'application_trigram': fields.String(required=True, description='The target environment'),
+  'owner': fields.String(required=True, description='The VM owner Gaia'),
+  'operating_system': fields.String(required=True, description='The VM OS'),
+  'cpu_count': fields.Integer(required=True, description='The number of CPU of the VM'),
+  'ram_size': fields.Integer(required=True, description='The RAM size of the VM'),
+  'disk_size': fields.String(required=True, description='The VM disk size')
+})
+
+delete_onprem_model = ns_onpremise.model('Delete a VM On Premise', {
+  'vm_name': fields.String(description='The name of the VM'),
+  'target_env': fields.String(required=True, description='The target environment')
+})
+
+get_onprem_model = ns_onpremise.model('Get VM On Premise infos', {
+  'wf_id': fields.Integer(description='The AWX Job Id')
+})
+
+@ns_onpremise.route('/<int:id>')
+#@ns_onpremise.doc(params={'awx_url': 'AWX base URL', 'awx_token': 'AWX access token', 'payload': 'JSON payload'})
+@ns_onpremise.doc(params={'id': 'AWX Job Id'})
+class GetOnPremise(Resource):            #  Create a RESTful resource
+  # @ns_onpremise.expect(get_onprem_model)
+  def get(self, id):
+    """
+    Get infos from on premise VM workflow
+    """
+    return onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
 
 @ns_onpremise.route('/')
-class OnPremise(Resource):            #  Create a RESTful resource
-  def get(self):                     #  Create GET endpoint
-    return {'hello': 'On Premise'}
-
+class PostOnPremise(Resource):            #  Create a RESTful resource
+  @ns_onpremise.expect(create_onprem_model)
   def post(self):                     #  Create POST endpoint
-    return {'hello': 'On Premise'}
+    """
+    Create a VM on premise on VMWare
+    """
+
+    extra_vars = {}
+    payload = {}
+    extra_vars['target_env'] = api.payload['target_env']
+    extra_vars['site'] = api.payload['site']
+    extra_vars['application_trigram'] = api.payload['application_trigram']
+    extra_vars['owner'] = api.payload['owner']
+    extra_vars['operating_system'] = api.payload['operating_system']
+    extra_vars['cpu_count'] = int(api.payload['cpu_count'])
+    extra_vars['ram_size'] = int(api.payload['ram_size'])
+    extra_vars['disk_size'] = str(api.payload['disk_size'])
+    extra_vars['vmname'] = api.payload['vmname']
+    payload['extra_vars'] = extra_vars
+
+    return onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
+  
+  @ns_onpremise.expect(delete_onprem_model)
+  def delete(self):
+    """
+    Delete a VM on premise on VMWare
+    """
+    extra_vars = {}
+    payload = {}
+    extra_vars['target_env'] = api.payload['target_env']
+    extra_vars['vm_name'] = api.payload['vm_name']
+    payload['extra_vars'] = extra_vars
+
+    return onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
 
 @ns_azure.route('/')
 class Azure(Resource):            #  Create a RESTful resource
-    def get(self):                     #  Create GET endpoint
-        return {'hello': 'Azure'}
+  def post(self):                     #  Create GET endpoint
+    """
+    Create a VM in Azure cloud
+    """
+    return azure.createAzureVM(vmname='test', vmsize='big')
 
 @app.route('/hello/<phrase>')
 def hello(phrase):
@@ -142,4 +239,4 @@ def ma_page_404(error):
   return render_template('404.html', titre="Hahaha 404, N00b !"), 404
   
 if __name__ == '__main__':
-  app.run(debug=True, host='0.0.0.0', port='5001')
+  app.run(debug=True, host='0.0.0.0', port='5003')
