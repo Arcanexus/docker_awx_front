@@ -9,7 +9,8 @@ def checkAWXconnection(awx_url, awx_token):
   headers['Accept'] = "application/json"
   
   session = requests.Session()
-  session.trust_env = False
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path
   
   check_conn = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers, verify=False)
 

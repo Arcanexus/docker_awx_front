@@ -12,7 +12,8 @@ def createVMOnPremise(awx_url, awx_token, payload):
   headers['Accept'] = "application/json"
   
   session = requests.Session()
-  session.trust_env = False
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path
   
   list_wf_templates = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers, verify=False)
   res_json=loads(list_wf_templates.content)
@@ -35,7 +36,8 @@ def deleteVMOnPremise(awx_url, awx_token, payload):
   headers['Accept'] = "application/json"
   
   session = requests.Session()
-  session.trust_env = False
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path
   
   list_wf_templates = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers, verify=False)
   res_json=loads(list_wf_templates.content)
@@ -60,7 +62,8 @@ def getVMOnPremiseInfos(awx_url, awx_token, wf_id):
   headers['Accept'] = "application/json"
   
   session = requests.Session()
-  session.trust_env = False
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path  
   
   # Check if wf_id is a valid Create on prem WF
   check_wf_id = session.get(awx_url + '/api/v2/workflow_jobs/' + str(wf_id) + '/', headers=headers, verify=False)
