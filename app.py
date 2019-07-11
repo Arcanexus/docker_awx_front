@@ -86,7 +86,7 @@ def home():
   if resetform.resetdb.data:
     session = requests.Session()
     session.trust_env = False
-    response4 = session.get(awx_url + '/reset', allow_redirects=True)
+    response4 = session.get(awx_url + '/reset', allow_redirects=True, verify=False)
     print(response4.text)
     return redirect('/')
 
@@ -111,7 +111,7 @@ def home():
     if bouchon == 'True':
       session = requests.Session()
       session.trust_env = False
-      bouchonContent = session.get(awx_url, allow_redirects=True)
+      bouchonContent = session.get(awx_url, allow_redirects=True, verify=False)
       parsed = loads(bouchonContent.text)    
       flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
     else:

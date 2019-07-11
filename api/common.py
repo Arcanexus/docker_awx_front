@@ -11,6 +11,6 @@ def checkAWXconnection(awx_url, awx_token):
   session = requests.Session()
   session.trust_env = False
   
-  check_conn = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers)
+  check_conn = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers, verify=False)
 
   return check_conn.status_code
