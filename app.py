@@ -8,7 +8,7 @@ from json import dumps, loads
 import platform
 import requests
 # import ldap
-import os, sys
+import os, sys, re
 from api import azure, onpremise, common
 
 if "BOUCHON" in os.environ:
@@ -21,6 +21,14 @@ if "AWX_URL" in os.environ:
 else:
   #awx_url = 'http://127.0.0.1:5002' # default bouchon
   awx_url = 'http://10.20.102.6'
+matching = re.match('^http(s|)://giacportal(|-)((|dev|hom)(|[0-9]))\.gem\.myengie\.com(|/)$',awx_url)
+if matching:
+  if matching.group(3) == '':
+    env = PROD
+  else:
+    env = matching.group(3)
+else:
+  env = 'LOCAL'
 if "AWX_TOKEN" in os.environ:
   awx_token = os.environ['AWX_TOKEN']
 else:
@@ -42,6 +50,7 @@ if check_res != 200:
 else:
   print("Connected to AWX [" + awx_url + "]")
 
+# TODO : Cleanup
 class MyForm(FlaskForm):
   name = StringField('Nom', validators=[validators.DataRequired()])
   age = IntegerField('Âge', [validators.DataRequired(), validators.Length(min=1, max=3)])
@@ -140,7 +149,7 @@ def home():
 
   else:
     return render_template('index.html', 
-      titre="GIAC Portal",
+      titre=env + " GIAC Portal",
       mots=mots,
       form=createvmform,
       resetform=resetform,
