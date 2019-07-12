@@ -24,7 +24,7 @@ else:
 matching = re.match('^http(s|)://giacportal(|-)((|dev|hom)(|[0-9]))\.gem\.myengie\.com(|/)$',awx_url)
 if matching:
   if matching.group(3) == '':
-    env = PROD
+    env = 'PROD'
   else:
     env = matching.group(3)
 else:
