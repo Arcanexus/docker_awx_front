@@ -38,7 +38,7 @@ else:
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.0', title='GIAC API', description='GIAC automation RESTfull API connected to <a href="'+awx_url+'">'+awx_url+'</a>')
+api = Api(blueprint, version='1.0', title='GIAC API for ' + env, description='GIAC automation RESTfull API connected to ' + env + ' : <a href="'+awx_url+'">'+awx_url+'</a>')
 ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
 ns_azure = api.namespace('azure', description='Operation for VM on Azure')
 app.register_blueprint(blueprint)
