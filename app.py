@@ -11,14 +11,6 @@ import requests
 import os, sys
 from api import azure, onpremise, common
 
-app = Flask(__name__,template_folder='./templates/')
-app.config['SECRET_KEY'] = 'apple pie, because why not.'
-blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.0', title='GIAC API', description='GIAC automation RESTfull API')
-ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
-ns_azure = api.namespace('azure', description='Operation for VM on Azure')
-app.register_blueprint(blueprint)
-
 if "BOUCHON" in os.environ:
   bouchon = os.environ['BOUCHON']
 else:
@@ -34,6 +26,14 @@ if "AWX_TOKEN" in os.environ:
 else:
   #awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
   awx_token = 'IH8zKI3k46jCoLuy36ccOVzpht7XFG' # local awx admin test token
+
+app = Flask(__name__,template_folder='./templates/')
+app.config['SECRET_KEY'] = 'apple pie, because why not.'
+blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
+api = Api(blueprint, version='1.0', title='GIAC API', description='GIAC automation RESTfull API connected to <a href="'+awx_url+'">'+awx_url+'</a>')
+ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
+ns_azure = api.namespace('azure', description='Operation for VM on Azure')
+app.register_blueprint(blueprint)
 
 # check AWX connection
 check_res = common.checkAWXconnection(awx_url=awx_url, awx_token=awx_token)
