@@ -8,8 +8,29 @@ from json import dumps, loads
 import platform
 import requests
 # import ldap
+import logging
 import os, sys, re
-from api import azure, onpremise, common
+from awx_api import azure, onpremise, common
+
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+# create console and file handlers and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+fh = logging.FileHandler('giac_portal.log')
+fh.setLevel(logging.DEBUG)
+# create formatter
+formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(name)s - %(message)s')
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+# add handlers to logger
+logger.addHandler(ch)
+logger.addHandler(fh)
+
+logger.info('================================================================================')
+logger.info('=                               AWX PORTAL                                    =')
+logger.info('================================================================================')
 
 if "BOUCHON" in os.environ:
   bouchon = os.environ['BOUCHON']
@@ -33,7 +54,7 @@ if "AWX_TOKEN" in os.environ:
   awx_token = os.environ['AWX_TOKEN']
 else:
   #awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
-  awx_token = 'IH8zKI3k46jCoLuy36ccOVzpht7XFG' # local awx admin test token
+  awx_token = 'rDxTKN2vgQYMNvHjatvEFQdcxp8DHT' # local awx admin test token
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
@@ -46,9 +67,11 @@ app.register_blueprint(blueprint)
 # check AWX connection
 check_res = common.checkAWXconnection(awx_url=awx_url, awx_token=awx_token)
 if check_res != 200:
+  logger.critical('Impossible to connect to AWX [' + awx_url + ']')
   sys.exit("Impossible to connect to AWX [" + awx_url + "]")
 else:
-  print("Connected to AWX [" + awx_url + "]")
+  logger.info("Connected to " + env.upper() + "AWX [" + awx_url + "]")
+logger.info("AWX Portal successfully started.")
 
 # TODO : Cleanup
 class MyForm(FlaskForm):
@@ -115,7 +138,7 @@ def home():
     extra_vars['vmname'] = createvmform.vm_name.data
     payload['extra_vars'] = extra_vars
 
-    # Bouchon
+    logger.info('Creating a VM on Premise with the following parameters : ' + payload['extra_vars'])
     result = onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
     
     if bouchon == 'True':
@@ -138,11 +161,13 @@ def home():
     extra_vars['vm_name'] = createvmform.vm_name.data
     payload['extra_vars'] = extra_vars
 
+    logger.info('Deleting a VM on Premise with the following parameters : ' + payload['extra_vars'])
     result = onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
 
   elif getinfosform.getinfos_button.data:
+    logger.info('Getting information for the following AWX workflow : ' + getinfosform.wf_id.data)
     result = onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
@@ -187,6 +212,7 @@ class GetOnPremise(Resource):            #  Create a RESTful resource
     """
     Get infos from on premise VM workflow
     """
+    logger.info('Getting information for the following AWX workflow : ' + str(id))
     return onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
 
 @ns_onpremise.route('/')
@@ -210,6 +236,7 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     extra_vars['vmname'] = api.payload['vmname']
     payload['extra_vars'] = extra_vars
 
+    logger.info('Creating a VM on Premise with the following parameters : ' + payload['extra_vars'])
     return onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
   
   @ns_onpremise.expect(delete_onprem_model)
@@ -223,6 +250,7 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     extra_vars['vm_name'] = api.payload['vm_name']
     payload['extra_vars'] = extra_vars
 
+    logger.info('Deleting a VM on Premise with the following parameters : ' + payload['extra_vars'])
     return onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
 
 @ns_azure.route('/')
