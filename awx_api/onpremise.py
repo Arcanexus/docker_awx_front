@@ -89,8 +89,6 @@ def getVMOnPremiseInfos(awx_url, awx_token, wf_id):
       wf_jobs[item['summary_fields']['job']['name']] = item['summary_fields']['job']['status']
       if item['summary_fields']['job']['name'] == 'Post Install Windows':
         postinstall_job_url = awx_url + '/api/v2/jobs/' + str(item['summary_fields']['job']['id'])
-      else:
-        print(item['summary_fields']['unified_job_template']['name'])
 
   wf_output['jobs'] = wf_jobs
 
