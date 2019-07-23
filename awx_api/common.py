@@ -48,7 +48,9 @@ def getAWXInfos(awx_url, awx_token, wf_id):
     res_json=loads(list_wf_nodes.content)
     for item in res_json['results']:
       if 'job' in item['summary_fields']:
-        wf_jobs[item['summary_fields']['job']['name']] = item['summary_fields']['job']['status']
+        wf_jobs[item['summary_fields']['job']['name']] = {}
+        wf_jobs[item['summary_fields']['job']['name']]['id'] = item['summary_fields']['job']['id']
+        wf_jobs[item['summary_fields']['job']['name']]['status'] = item['summary_fields']['job']['status']
         if item['summary_fields']['job']['name'] == 'Post Install Windows':
           postinstall_job_url = awx_url + '/api/v2/jobs/' + str(item['summary_fields']['job']['id'])
 
