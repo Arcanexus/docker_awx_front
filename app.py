@@ -73,13 +73,6 @@ else:
   logger.info("Connected to " + env.upper() + "AWX [" + awx_url + "]")
 logger.info("AWX Portal successfully started.")
 
-# TODO : Cleanup
-class MyForm(FlaskForm):
-  name = StringField('Nom', validators=[validators.DataRequired()])
-  age = IntegerField('Âge', [validators.DataRequired(), validators.Length(min=1, max=3)])
-  remember_me = BooleanField('Se souvenir de moi')
-  submit = SubmitField('Valider')
-
 class CreateVMForm(FlaskForm):
   target_env = SelectField('Target Environment', choices=[('Development', 'Development'), ('Homologation', 'Homologation'), ('Production', 'Production')], default='Development', validators=[validators.DataRequired()])
   target_site = SelectField('Target Site', choices=[('PN1','PN1'), ('PN2','PN2'), ('SD1','SD1')], default='PN1', validators=[validators.DataRequired()])
@@ -92,12 +85,27 @@ class CreateVMForm(FlaskForm):
   vm_disk_size = IntegerField('System Disk Size', default='50', validators=[validators.DataRequired(), validators.Regexp('^\d+$', message="Invalid format")])
   vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
   vm_count = IntegerField('Count', default=1, validators=[validators.DataRequired(), validators.Regexp('^\d+$', message="Invalid format")])
-  create_button = SubmitField('Create')
+  create_button = SubmitField('Create On Premise VM')
+
+class CreateAzureVMForm(FlaskForm):
+  vm_owner_gaia = StringField('Gaia', validators=[validators.DataRequired(), validators.Regexp('^[a-zA-Z]{2}\d{4}(-(a|o)|)$', message="Username format : XX1234(-a|-o)")])
+  vm_os = SelectField('Operating System', choices=[('Windows2016', 'Windows 2016')], default='Windows2016', validators=[validators.DataRequired()])
+  vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
+  vm_resourcegroup = StringField('Resource group', validators=[validators.DataRequired()])
+  vm_image = StringField('Source image name', validators=[validators.DataRequired()])
+  vm_size = SelectField('VM Size',choices=[('Standard_A2_v2', 'Standard_A2_v2'),  ('Standard_A8_v2', 'Standard_A8_v2'),  ('Standard_A8m_v2', 'Standard_A8m_v2'),  ('Standard_B8ms', 'Standard_B8ms'),  ('Standard_D2_v3', 'Standard_D2_v3'),  ('Standard_D4_v3', 'Standard_D4_v3'),  ('Standard_DS12_v2', 'Standard_DS12_v2'),  ('Standard_DS4_v2', 'Standard_DS4_v2'),  ('Standard_DS5_v2', 'Standard_DS5_v2'),  ('Standard_E16s_v3', 'Standard_E16s_v3'),  ('Standard_E64is_v3', 'Standard_E64is_v3'),  ('Standard_F16s_v2', 'Standard_F16s_v2'),  ('Standard_F8s', 'Standard_F8s'),  ('Standard_B2ms', 'Standard_B2ms'),  ('Standard_B1ms', 'Standard_B1ms'),  ('Standard_B2s', 'Standard_B2s'),  ('Standard_DS13_v2', 'Standard_DS13_v2'),  ('Standard_DS14_v2', 'Standard_DS14_v2'),  ('Standard_D3_v2', 'Standard_D3_v2'),  ('Standard_DS1_v2', 'Standard_DS1_v2'),  ('Standard_DS2_v2', 'Standard_DS2_v2')], validators=[validators.DataRequired()])
+  vm_dc = SelectField('DC', choices=[('CTO', 'CTO'), ('Meteor', 'Meteor'), ('Gemstone', 'Gemstone'), ('Power', 'Power'), ('Bulk', 'Bulk'), ('Gas', 'Gas'), ('Transversal', 'Transversal'), ('GSSNGE', 'GSSNGE'), ('Infra', 'Infra')], validators=[validators.DataRequired()])
+  createaz_button = SubmitField('Create Azure VM')
 
 class DeleteVMForm(FlaskForm):
   vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
   target_env = SelectField('Target Environment', choices=[('Development', 'Development'), ('Homologation', 'Homologation'), ('Production', 'Production')], default='Development', validators=[validators.DataRequired()])
-  delete_button = SubmitField('Delete')
+  delete_button = SubmitField('Delete On Premise VM')
+
+class DeleteAzureVMForm(FlaskForm):
+  vmname = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
+  resource_group = StringField('Resource group', validators=[validators.DataRequired()])
+  deleteaz_button = SubmitField('Delete Azure VM')
 
 class GetInfosForm(FlaskForm):
   wf_id = IntegerField('Id', validators=[validators.DataRequired()])
@@ -109,10 +117,11 @@ class ResetForm(FlaskForm):
 @app.route('/', methods=['POST','GET'])
 def home():
   mots = ["Bonjour", "à", "toi,", "anonyme citoyen."]
-  form = MyForm()
   resetform = ResetForm()
   createvmform = CreateVMForm()
+  createazvmform = CreateAzureVMForm()
   deletevmform = DeleteVMForm()
+  deleteazvmform = DeleteAzureVMForm()
   getinfosform = GetInfosForm()
   
   if resetform.resetdb.data:
@@ -138,7 +147,7 @@ def home():
     extra_vars['vmname'] = createvmform.vm_name.data
     payload['extra_vars'] = extra_vars
 
-    logger.info('Creating a VM on Premise with the following parameters : ' + payload['extra_vars'])
+    logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
     result = onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
     
     if bouchon == 'True':
@@ -157,17 +166,49 @@ def home():
     
     extra_vars = {}
     payload = {}
-    extra_vars['target_env'] = createvmform.target_env.data
-    extra_vars['vm_name'] = createvmform.vm_name.data
+    extra_vars['target_env'] = deletevmform.target_env.data
+    extra_vars['vm_name'] = deletevmform.vm_name.data
     payload['extra_vars'] = extra_vars
 
-    logger.info('Deleting a VM on Premise with the following parameters : ' + payload['extra_vars'])
+    logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
     result = onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
 
+  elif createazvmform.createaz_button.data:
+    
+    extra_vars = {}
+    payload = {}
+    extra_vars['resource_group'] = createazvmform.vm_resourcegroup.data
+    extra_vars['image'] = createazvmform.vm_image.data
+    extra_vars['size'] = createazvmform.vm_size.data
+    extra_vars['owner'] = createazvmform.vm_owner_gaia.data
+    extra_vars['operating_system'] = createazvmform.vm_os.data
+    extra_vars['target_dc'] = createazvmform.vm_dc.data
+    extra_vars['vmname'] = createazvmform.vm_name.data
+    payload['extra_vars'] = extra_vars
+
+    logger.info('Creating an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
+    result = azure.createAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+
+    return redirect('/#flash')
+
+  elif deleteazvmform.deleteaz_button.data:
+    
+    extra_vars = {}
+    payload = {}
+    extra_vars['resource_group'] = deleteazvmform.resource_group.data
+    extra_vars['vmname'] = deleteazvmform.vmname.data
+    payload['extra_vars'] = extra_vars
+
+    logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
+    result = azure.deleteAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    return redirect('/#flash')
+
   elif getinfosform.getinfos_button.data:
-    logger.info('Getting information for the following AWX workflow : ' + getinfosform.wf_id.data)
+    logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.wf_id.data))
     result = onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
@@ -177,30 +218,47 @@ def home():
       titre=env.upper() + " GIAC Portal",
       mots=mots,
       form=createvmform,
+      createazvmform=createazvmform,
       resetform=resetform,
       deletevmform=deletevmform,
+      deleteazvmform=deleteazvmform,
       getinfosform=getinfosform,
       bouchon=bouchon)
 
 create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
   'vmname': fields.String(description='The name of the VM'),
-  'target_env': fields.String(required=True, description='The target environment'),
-  'site': fields.String(required=True, description='The target site'),
-  'application_trigram': fields.String(required=True, description='The target environment'),
-  'owner': fields.String(required=True, description='The VM owner Gaia'),
-  'operating_system': fields.String(required=True, description='The VM OS'),
-  'cpu_count': fields.Integer(required=True, description='The number of CPU of the VM'),
-  'ram_size': fields.Integer(required=True, description='The RAM size of the VM'),
+  'target_env': fields.String(required=True, description='The target environment', enum=['Development', 'Homologation', 'Production']),
+  'site': fields.String(required=True, description='The target site', enum=['PN1', 'PN2', 'SD1']),
+  'application_trigram': fields.String(required=True, description='The target environment', min_length=3, max_length=3),
+  'owner': fields.String(required=True, description='The VM owner Gaia', pattern='^[a-zA-Z]{2}\d{4}(-(a|o)|)$'),
+  'operating_system': fields.String(required=True, description='The VM Operatig System', example='Windows2016', enum=['Windows2016']),
+  'cpu_count': fields.Integer(required=True, description='The number of CPU of the VM', min=1, max=8),
+  'ram_size': fields.Integer(required=True, description='The RAM size of the VM', min=1024, max=32768),
   'disk_size': fields.String(required=True, description='The VM disk size')
 })
 
+create_azurevm_model = ns_azure.model('Create an azure VM from an image', {
+  'vm_dc': fields.String(required=True, description='The name of the DC', enum=['CTO', 'Meteor', 'Gemstone', 'Power', 'Bulk', 'Gas', 'Transversal', 'GSSNGE', 'Infra']),
+  'vm_owner_gaia': fields.String(required=True, description="The owner's Gaia", pattern='^[a-zA-Z]{2}\d{4}(-(a|o)|)$'),
+  'vm_resourcegroup': fields.String(required=True, description='The name of the Azure Resource Group'),
+  'vm_image': fields.String(required=True, description='The name of image to use from the Resource Group'),
+  'vm_os': fields.String(required=True, description='The VM Operatig System', example='Windows2016', enum=['Windows2016']),
+  'vm_size': fields.String(required=True, description='The size of the Azure VM', enum=['Standard_A2_v2', 'Standard_A8_v2', 'Standard_A8m_v2', 'Standard_B8ms', 'Standard_D2_v3', 'Standard_D4_v3', 'Standard_DS12_v2', 'Standard_DS4_v2', 'Standard_DS5_v2', 'Standard_E16s_v3', 'Standard_E64is_v3', 'Standard_F16s_v2', 'Standard_F8s', 'Standard_B2ms', 'Standard_B1ms', 'Standard_B2s', 'Standard_DS13_v2', 'Standard_DS14_v2', 'Standard_D3_v2', 'Standard_DS1_v2', 'Standard_DS2_v2']),
+  'vm_name': fields.String(description='The name of the VM')
+})
+
 delete_onprem_model = ns_onpremise.model('Delete a VM On Premise', {
-  'vm_name': fields.String(description='The name of the VM'),
-  'target_env': fields.String(required=True, description='The target environment')
+  'vm_name': fields.String(required=True, description='The name of the VM'),
+  'target_env': fields.String(required=True, description='The target environment', enum=['Development', 'Homologation', 'Production'])
+})
+
+delete_azurevm_model = ns_azure.model('Delete an Azure VM', {
+  'vm_name': fields.String(required=True, description='The name of the VM'),
+  'resource_group':  fields.String(required=True, description='The name of the Azure Resource Group')
 })
 
 get_onprem_model = ns_onpremise.model('Get VM On Premise infos', {
-  'wf_id': fields.Integer(description='The AWX Job Id')
+  'wf_id': fields.Integer(required=True, description='The AWX Job Id')
 })
 
 @ns_onpremise.route('/<int:id>')
@@ -236,7 +294,7 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     extra_vars['vmname'] = api.payload['vmname']
     payload['extra_vars'] = extra_vars
 
-    logger.info('Creating a VM on Premise with the following parameters : ' + payload['extra_vars'])
+    logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
     return onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
   
   @ns_onpremise.expect(delete_onprem_model)
@@ -250,16 +308,44 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     extra_vars['vm_name'] = api.payload['vm_name']
     payload['extra_vars'] = extra_vars
 
-    logger.info('Deleting a VM on Premise with the following parameters : ' + payload['extra_vars'])
+    logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
     return onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
 
 @ns_azure.route('/')
-class Azure(Resource):            #  Create a RESTful resource
-  def post(self):                     #  Create GET endpoint
+class PostAzure(Resource):            #  Create a RESTful resource
+  @ns_azure.expect(create_azurevm_model)
+  def post(self):                     #  Create POST endpoint
     """
-    Create a VM in Azure cloud
+    Create a VM in Azure cloud from an image
     """
-    return azure.createAzureVM(vmname='test', vmsize='big')
+
+    extra_vars = {}
+    payload = {}
+    extra_vars['resource_group'] = api.payload['vm_resourcegroup']
+    extra_vars['image'] = api.payload['vm_image']
+    extra_vars['size'] = api.payload['vm_size']
+    extra_vars['owner'] = api.payload['vm_owner_gaia']
+    extra_vars['operating_system'] = api.payload['vm_os']
+    extra_vars['target_dc'] = api.payload['vm_dc']
+    extra_vars['vmname'] = api.payload['vm_name']
+    payload['extra_vars'] = extra_vars
+
+    logger.info('Creating an Azure VM from an image with the following parameters : ' + dumps(payload['extra_vars']))
+    return azure.createAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+  
+  @ns_azure.expect(delete_azurevm_model)
+  def delete(self):
+    """
+    Delete an Azure VM
+    """
+    extra_vars = {}
+    payload = {}
+    extra_vars['resource_group'] = api.payload['resource_group']
+    extra_vars['vm_name'] = api.payload['vm_name']
+    payload['extra_vars'] = extra_vars
+
+    logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
+    return azure.deleteAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
 
 @app.route('/hello/<phrase>')
 def hello(phrase):

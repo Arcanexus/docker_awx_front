@@ -37,20 +37,20 @@
                 <!-- Nav tabs -->
                 <ul class="nav nav-tabs tabbor" role="tablist">
                   <li class="nav-item">
-                    <a class="nav-link active" data-toggle="tab" href="#createvm">Create VM On Premise</a>
+                    <a class="nav-link active" data-toggle="tab" href="#createvm">ON PREMISE - Create VM</a>
                   </li>
                   <li class="nav-item tabbor">
-                    <a class="nav-link" data-toggle="tab" href="#deletevm">Delete VM On Premise</a>
+                    <a class="nav-link" data-toggle="tab" href="#deletevm">ON PREMISE - Delete VM</a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#getinfos">Get Workflow Informations</a>
+                    <a class="nav-link" data-toggle="tab" href="#createazvm">AZURE - Create VM from image</a>
                   </li>
-                    <!-- <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#ourport">OUR PORTFOLIO</a>
+                  <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#deleteazvm">AZURE - Delete VM</a>
+                      </li>
+                  <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#getinfos">Workflow Informations</a>
                   </li>
-                   <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#ourteam">OUR TEAM</a>
-                  </li> -->
                   <li >
                     <a class="nav-link" href="/api/v1">API</a>
                   </li>
@@ -92,7 +92,7 @@
                             <tr><td>{{ form.vm_disk_size.label }} : </td><td>{{ form.vm_disk_size(size=3) }}GB</td></tr>
                     
                             <tr>
-                                <th>{{ form.vm_count.label }} : {{ form.vm_count(size=3) }}</th>
+                                <th></th><!-- <th>{{ form.vm_count.label }} : {{ form.vm_count(size=3) }}</th> -->
                                 <td colspan="2">{{ form.create_button() }}</td>
                             </tr>
                             </table></div>
@@ -138,20 +138,69 @@
                                 <td>{{ getinfosform.wf_id.label }} : </td><td>{{ getinfosform.wf_id(size=20) }}</td>
                             </tr>
                             <tr>
-                                <td></td><th colspan="2">{{ getinfosform.getinfos_button() }}</th>
+                                <th colspan="2">{{ getinfosform.getinfos_button() }}</th><td></td>
                             </tr>
                             </table></div>
                         </form>
                     </p>
                   </div>
-                  <!-- <div id="ourport" class="container tab-pane fade tabbor"><br>
-                    <h3>Our Portfolio</h3>
-                    <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
+                  <div id="createazvm" class="container tab-pane fade tabbor"><br>
+                    <h3>Create Azure VM from image</h3>
+                    <p>
+                        <form method="POST" action="/">
+                            <div class="table-responsive"><table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th colspan="4"><center>Create Azure VM from image</center></th>
+                                </tr>
+                            </thead>
+                            <tr>
+                                    <th rowspan="2">Owner parameters</th>
+                                    <td>{{ createazvmform.vm_dc.label }} : </td><td>{{ createazvmform.vm_dc() }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ createazvmform.vm_owner_gaia.label }} : </td><td>{{ createazvmform.vm_owner_gaia() }}</td>
+                                </tr>
+                                <tr>
+                                    <th rowspan="5">VM parameters</th>
+                                    <td>{{ createazvmform.vm_resourcegroup.label }} : </td><td>{{ createazvmform.vm_resourcegroup(size=20) }}</td>
+                                </tr>
+                                <tr><td>{{ createazvmform.vm_image.label }} : </td><td>{{ createazvmform.vm_image() }}</td></tr>
+                                <tr><td>{{ createazvmform.vm_os.label }} : </td><td>{{ createazvmform.vm_os() }}</td></tr>
+                                <tr><td>{{ createazvmform.vm_size.label }} : </td><td>{{ createazvmform.vm_size() }}</td></tr>
+                                <tr><td>{{ createazvmform.vm_name.label }} : </td><td>{{ createazvmform.vm_name() }}</td></tr>
+                                <tr>
+                                    <th></th>
+                                    <th colspan="2">{{ createazvmform.createaz_button() }}</th>
+                                </tr>
+                            </table></div>
+                        </form> 
+                    </p>
                   </div>
-                  <div id="ourteam" class="container tab-pane fade tabbor"><br>
-                    <h3>Our Team</h3>
-                    <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.</p>
-                  </div> -->
+                  <div id="deleteazvm" class="container tab-pane fade tabbor"><br>
+                    <h3>Delete Azure VM</h3>
+                    <p>
+                        <form method="POST" action="/">
+                            <div class="table-responsive"><table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th colspan="4"><center>VM to delete</center></th>
+                                </tr>
+                            </thead>
+                            <tr>
+                                <th rowspan="2">Environment parameters</th>
+                                <td>{{ deleteazvmform.resource_group.label }} : </td><td>{{ deleteazvmform.resource_group(size=20) }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ deleteazvmform.vmname.label }} : </td><td>{{ deleteazvmform.vmname() }}</td>
+                            </tr>
+                            <tr>
+                                <td></td><th colspan="2">{{ deleteazvmform.deleteaz_button() }}</th>
+                            </tr>
+                            </table></div>
+                        </form>
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -1,3 +1,13 @@
+# v1.0.0-beta.4
+## 22-july-2019
+### Added
+- Portal : Create / Delete Azure VM
+- API : Create / Delete Azure VM
+### Enhanced
+- some code cleaning
+### Fixed
+- Common : logging format issue
+
 
 # v1.0.0-beta.3
 ## 18-july-2019
