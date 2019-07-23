@@ -1,12 +1,16 @@
 # v1.0.0-beta.4
-## 22-july-2019
+## 23-july-2019
 ### Added
 - Portal : Create / Delete Azure VM
 - API : Create / Delete Azure VM
 ### Enhanced
-- some code cleaning
+- Portal : Renaming tabs
+- Common : Move getAWXInfos function from onpremise lib to common lib
+- Common : Add the ability to request jobs infos in getAWXInfos function
+- Common : Add more job/workflow name and extra_vars to getAWXInfos output
+- Common : Some code cleaning
 ### Fixed
-- Common : logging format issue
+- Common : Logging format issue
 
 
 # v1.0.0-beta.3

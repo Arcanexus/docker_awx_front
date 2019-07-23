@@ -47,7 +47,7 @@ def deleteAzureVM(awx_url, awx_token, payload):
   
   # get wf status
   wf_output = {}
-  wf_output['id'] = response.json()['workflow_job']
+  wf_output['id'] = response.json()['job']
   if response.status_code == 201:
     wf_output['response_code'] = 204 # HTTP code for No Content
   else:

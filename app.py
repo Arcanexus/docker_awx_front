@@ -62,6 +62,7 @@ blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
 api = Api(blueprint, version='1.0', title='GIAC API for ' + env.upper(), description='GIAC automation RESTfull API connected to ' + env.upper() + ' : <a href="'+awx_url+'">'+awx_url+'</a>')
 ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
 ns_azure = api.namespace('azure', description='Operation for VM on Azure')
+ns_infos = api.namespace('infos', description="Jobs or Workflows informations")
 app.register_blueprint(blueprint)
 
 # check AWX connection
@@ -209,7 +210,7 @@ def home():
 
   elif getinfosform.getinfos_button.data:
     logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.wf_id.data))
-    result = onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
+    result = common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
 
@@ -257,21 +258,21 @@ delete_azurevm_model = ns_azure.model('Delete an Azure VM', {
   'resource_group':  fields.String(required=True, description='The name of the Azure Resource Group')
 })
 
-get_onprem_model = ns_onpremise.model('Get VM On Premise infos', {
+get_onprem_model = ns_infos.model('Get job or workflow infos', {
   'wf_id': fields.Integer(required=True, description='The AWX Job Id')
 })
 
-@ns_onpremise.route('/<int:id>')
+@ns_infos.route('/<int:id>')
 #@ns_onpremise.doc(params={'awx_url': 'AWX base URL', 'awx_token': 'AWX access token', 'payload': 'JSON payload'})
-@ns_onpremise.doc(params={'id': 'AWX Job Id'})
+@ns_infos.doc(params={'id': 'AWX Job Id'})
 class GetOnPremise(Resource):            #  Create a RESTful resource
   # @ns_onpremise.expect(get_onprem_model)
   def get(self, id):
     """
-    Get infos from on premise VM workflow
+    Get infos from a job or a workflow
     """
-    logger.info('Getting information for the following AWX workflow : ' + str(id))
-    return onpremise.getVMOnPremiseInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
+    logger.info('Getting information for the following AWX job or workflow : ' + str(id))
+    return common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
 
 @ns_onpremise.route('/')
 class PostOnPremise(Resource):            #  Create a RESTful resource

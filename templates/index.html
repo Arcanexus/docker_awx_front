@@ -16,18 +16,6 @@
         {% for mot in mots %}
             {{ mot }}
         {% endfor %}
-        
-        
-        <p><form method="POST" action="/">
-            {% if bouchon %}
-                {{ resetform.resetdb() }}
-            {% endif %}
-        </form></p>
-        
-
-        
-
-
         <pre>
         {{ parsed }}
         </pre>
@@ -49,7 +37,7 @@
                         <a class="nav-link" data-toggle="tab" href="#deleteazvm">AZURE - Delete VM</a>
                       </li>
                   <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#getinfos">Workflow Informations</a>
+                    <a class="nav-link" data-toggle="tab" href="#getinfos">Job or Workflow Informations</a>
                   </li>
                   <li >
                     <a class="nav-link" href="/api/v1">API</a>
