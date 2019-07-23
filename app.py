@@ -212,7 +212,7 @@ def home():
     logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.wf_id.data))
     result = common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-    return redirect('/#flash')
+    return redirect('/api/v1/infos/' + str(getinfosform.wf_id.data))
 
   else:
     return render_template('index.html', 
@@ -273,7 +273,7 @@ class GetOnPremise(Resource):            #  Create a RESTful resource
     """
     logger.info('Getting information for the following AWX job or workflow : ' + str(id))
     return common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
-
+    
 @ns_onpremise.route('/')
 class PostOnPremise(Resource):            #  Create a RESTful resource
   @ns_onpremise.expect(create_onprem_model)
