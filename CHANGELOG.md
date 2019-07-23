@@ -3,15 +3,16 @@
 ### Added
 - Portal : Create / Delete Azure VM
 - API : Create / Delete Azure VM
+- API : Get job template stdout
 ### Enhanced
 - Portal : Renaming tabs
+- Common : Massive code simplification
 - Common : Move getAWXInfos function from onpremise lib to common lib
 - Common : Add the ability to request jobs infos in getAWXInfos function
-- Common : Add more job/workflow name and extra_vars to getAWXInfos output
+- Common : Add job/workflow name, extra_vars and stdout link when requesting job/workflow informations
 - Common : Some code cleaning
 ### Fixed
 - Common : Logging format issue
-
 
 # v1.0.0-beta.3
 ## 18-july-2019

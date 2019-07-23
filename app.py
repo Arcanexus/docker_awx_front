@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from flask import Flask,jsonify,render_template, request, redirect, flash, Blueprint
+from flask import Flask,render_template, request, redirect, flash, Blueprint, Response
 from flask_restplus import Resource, Api, Namespace, fields
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, BooleanField, SubmitField, validators, RadioField, SelectField, SelectMultipleField
@@ -10,7 +10,7 @@ import requests
 # import ldap
 import logging
 import os, sys, re
-from awx_api import azure, onpremise, common
+from awx_api import common
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 # create console and file handlers and set level to debug
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-fh = logging.FileHandler('giac_portal.log')
+fh = logging.FileHandler('awx_portal.log')
 fh.setLevel(logging.DEBUG)
 # create formatter
 formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(name)s - %(message)s')
@@ -32,15 +32,9 @@ logger.info('===================================================================
 logger.info('=                               AWX PORTAL                                    =')
 logger.info('================================================================================')
 
-if "BOUCHON" in os.environ:
-  bouchon = os.environ['BOUCHON']
-else:
-  bouchon = "False"
-
 if "AWX_URL" in os.environ:
   awx_url = os.environ['AWX_URL']
 else:
-  #awx_url = 'http://127.0.0.1:5002' # default bouchon
   awx_url = 'http://10.20.102.6'
 matching = re.match('^http(s|)://giacportal(|-)((|dev|hom)(|[0-9]))\.gem\.myengie\.com(|/)$',awx_url)
 if matching:
@@ -53,13 +47,12 @@ else:
 if "AWX_TOKEN" in os.environ:
   awx_token = os.environ['AWX_TOKEN']
 else:
-  #awx_token = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' # local awx admin test token
   awx_token = 'rDxTKN2vgQYMNvHjatvEFQdcxp8DHT' # local awx admin test token
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.0', title='GIAC API for ' + env.upper(), description='GIAC automation RESTfull API connected to ' + env.upper() + ' : <a href="'+awx_url+'">'+awx_url+'</a>')
+api = Api(blueprint, version='1.0', title='GIAC API for ' + env.upper(), description='[ <a href="/">HOME</a> ] [ Connected to AWX : <a href="'+awx_url+'">' + env.upper() + '</a> ]')
 ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
 ns_azure = api.namespace('azure', description='Operation for VM on Azure')
 ns_infos = api.namespace('infos', description="Jobs or Workflows informations")
@@ -109,7 +102,7 @@ class DeleteAzureVMForm(FlaskForm):
   deleteaz_button = SubmitField('Delete Azure VM')
 
 class GetInfosForm(FlaskForm):
-  wf_id = IntegerField('Id', validators=[validators.DataRequired()])
+  item_id = IntegerField('Id', validators=[validators.DataRequired()])
   getinfos_button = SubmitField('Get Infos')
 
 class ResetForm(FlaskForm):
@@ -125,14 +118,6 @@ def home():
   deleteazvmform = DeleteAzureVMForm()
   getinfosform = GetInfosForm()
   
-  if resetform.resetdb.data:
-    session = requests.Session()
-    session.trust_env = False #disable proxy
-    session.verify = False # set SSL CA path
-    response4 = session.get(awx_url + '/reset', allow_redirects=True)
-    print(response4.text)
-    return redirect('/')
-
   if createvmform.create_button.data:
     
     extra_vars = {}
@@ -149,18 +134,8 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    result = onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
-    
-    if bouchon == 'True':
-      session = requests.Session()
-      session.trust_env = False #disable proxy
-      session.verify = False # set SSL CA path  
-      bouchonContent = session.get(awx_url, allow_redirects=True)
-      parsed = loads(bouchonContent.text)    
-      flash('{}'.format(dumps(parsed, indent=4, sort_keys=True)))
-    else:
-      flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
+    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
   
   elif deletevmform.delete_button.data:
@@ -172,7 +147,7 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    result = onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
 
@@ -190,7 +165,7 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    result = azure.createAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
 
     return redirect('/#flash')
@@ -204,15 +179,15 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    result = azure.deleteAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='job_templates', item_name='Remove azure VM', payload=payload)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/#flash')
 
   elif getinfosform.getinfos_button.data:
-    logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.wf_id.data))
-    result = common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=getinfosform.wf_id.data)
+    logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.item_id.data))
+    result = common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, item_id=getinfosform.item_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-    return redirect('/api/v1/infos/' + str(getinfosform.wf_id.data))
+    return redirect('/api/v1/infos/' + str(getinfosform.item_id.data))
 
   else:
     return render_template('index.html', 
@@ -223,8 +198,7 @@ def home():
       resetform=resetform,
       deletevmform=deletevmform,
       deleteazvmform=deleteazvmform,
-      getinfosform=getinfosform,
-      bouchon=bouchon)
+      getinfosform=getinfosform)
 
 create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
   'vmname': fields.String(description='The name of the VM'),
@@ -265,17 +239,28 @@ get_onprem_model = ns_infos.model('Get job or workflow infos', {
 @ns_infos.route('/<int:id>')
 #@ns_onpremise.doc(params={'awx_url': 'AWX base URL', 'awx_token': 'AWX access token', 'payload': 'JSON payload'})
 @ns_infos.doc(params={'id': 'AWX Job Id'})
-class GetOnPremise(Resource):            #  Create a RESTful resource
+class GetInfos(Resource):            #  Create a RESTful resource
   # @ns_onpremise.expect(get_onprem_model)
   def get(self, id):
     """
     Get infos from a job or a workflow
     """
     logger.info('Getting information for the following AWX job or workflow : ' + str(id))
-    return common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, wf_id=id)
-    
+    return common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, item_id=id)
+
+@ns_infos.route('/stdout/<int:id>')
+@ns_infos.doc(params={'id': 'AWX Job Id'})
+class GetStdout(Resource):            #  Create a RESTful resource
+  # @ns_onpremise.expect(get_onprem_model)
+  def get(self, id):
+    """
+    Get the standard output from a job
+    """
+    logger.info('Getting stdout for the following AWX job : ' + str(id))
+    return Response(common.getAWXStdout(awx_url=awx_url, awx_token=awx_token, item_id=id), mimetype='text/plain') 
+
 @ns_onpremise.route('/')
-class PostOnPremise(Resource):            #  Create a RESTful resource
+class OnPremise(Resource):            #  Create a RESTful resource
   @ns_onpremise.expect(create_onprem_model)
   def post(self):                     #  Create POST endpoint
     """
@@ -296,7 +281,7 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    return onpremise.createVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
   
   @ns_onpremise.expect(delete_onprem_model)
   def delete(self):
@@ -310,10 +295,10 @@ class PostOnPremise(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    return onpremise.deleteVMOnPremise(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
 
 @ns_azure.route('/')
-class PostAzure(Resource):            #  Create a RESTful resource
+class Azure(Resource):            #  Create a RESTful resource
   @ns_azure.expect(create_azurevm_model)
   def post(self):                     #  Create POST endpoint
     """
@@ -332,7 +317,7 @@ class PostAzure(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating an Azure VM from an image with the following parameters : ' + dumps(payload['extra_vars']))
-    return azure.createAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
   
   @ns_azure.expect(delete_azurevm_model)
   def delete(self):
@@ -346,15 +331,7 @@ class PostAzure(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    return azure.deleteAzureVM(awx_url=awx_url, awx_token=awx_token, payload=payload)
-
-@app.route('/hello/<phrase>')
-def hello(phrase):
-  return phrase
-
-@app.route('/json')
-def index_json():
-  return jsonify({'hello': 'world'})
+    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='job_templates', item_name='Remove azure VM', payload=payload)
 
 @app.route('/version')
 def index_version():
