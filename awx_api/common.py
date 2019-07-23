@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-import requests
+import requests, sys
 from json import dumps, loads
+from flask import request
 
 def checkAWXconnection(awx_url, awx_token):
+  """
+  Check the connection to AWX 
+  """
   headers = {}
   headers['Authorization'] = "Bearer " + awx_token
   headers['Content-Type'] = "application/json"
@@ -17,7 +21,10 @@ def checkAWXconnection(awx_url, awx_token):
 
   return check_conn.status_code
 
-def getAWXInfos(awx_url, awx_token, wf_id):
+def getAWXInfos(awx_url, awx_token, item_id):
+  """
+  Retrieve information about a Job or a Workflow id 
+  """
   headers = {}
   headers['Authorization'] = "Bearer " + awx_token
   headers['Content-Type'] = "application/json"
@@ -27,19 +34,19 @@ def getAWXInfos(awx_url, awx_token, wf_id):
   session.trust_env = False #disable proxy
   session.verify = False # set SSL CA path  
   
-  wf_output = {}
+  item_output = {}
 
-  # Check if wf_id is a valid workflow or job id
-  check_wf_id = session.get(awx_url + '/api/v2/workflow_jobs/' + str(wf_id) + '/', headers=headers)
-  check_job_id = session.get(awx_url + '/api/v2/jobs/' + str(wf_id) + '/', headers=headers)
+  # Check if item_id is a valid workflow or job id
+  check_wf_id = session.get(awx_url + '/api/v2/workflow_jobs/' + str(item_id) + '/', headers=headers)
+  check_job_id = session.get(awx_url + '/api/v2/jobs/' + str(item_id) + '/', headers=headers)
   
   if check_wf_id.status_code != 200 and check_job_id.status_code != 200:
-    return "The id " + str(wf_id) + " is not a valid job or workflow id."
+    return "The id " + str(item_id) + " is not a valid job or workflow id."
 
   if check_wf_id.status_code == 200:
-    response = session.get(awx_url + '/api/v2/workflow_jobs/' + str(wf_id) + '/', headers=headers, allow_redirects=True)
+    response = session.get(awx_url + '/api/v2/workflow_jobs/' + str(item_id) + '/', headers=headers, allow_redirects=True)
 
-    wf_output['name'] = response.json()['name']
+    item_output['name'] = response.json()['name']
     wf_jobs = {}
     postinstall_job_url = ''
 
@@ -51,10 +58,12 @@ def getAWXInfos(awx_url, awx_token, wf_id):
         wf_jobs[item['summary_fields']['job']['name']] = {}
         wf_jobs[item['summary_fields']['job']['name']]['id'] = item['summary_fields']['job']['id']
         wf_jobs[item['summary_fields']['job']['name']]['status'] = item['summary_fields']['job']['status']
+        wf_jobs[item['summary_fields']['job']['name']]['stdout'] = request.url_root + 'api/v1/infos/stdout/' + str(item['summary_fields']['job']['id'])
+
         if item['summary_fields']['job']['name'] == 'Post Install Windows':
           postinstall_job_url = awx_url + '/api/v2/jobs/' + str(item['summary_fields']['job']['id'])
 
-    wf_output['jobs'] = wf_jobs
+    item_output['jobs'] = wf_jobs
 
     if postinstall_job_url != '':
       # Get Post Install Windows job extra vars
@@ -63,16 +72,70 @@ def getAWXInfos(awx_url, awx_token, wf_id):
       vm_infos = {}
       vm_infos['name'] = loads(res_json)['vm_name']
       vm_infos['ip'] = loads(res_json)['netbox']['ip_address']
-      wf_output['vm_infos'] = vm_infos
+      item_output['vm_infos'] = vm_infos
 
   elif check_job_id.status_code == 200:
-    response = session.get(awx_url + '/api/v2/jobs/' + str(wf_id) + '/', headers=headers, allow_redirects=True)
-    wf_output['name'] = response.json()['summary_fields']['job_template']['name']
-    
-  wf_output['id'] = response.json()['id']
-  wf_output['created'] = response.json()['created']
-  wf_output['status'] = response.json()['status']
-  wf_output['failed'] = response.json()['failed']
-  wf_output['extra_vars'] = loads(response.json()['extra_vars'])
+    response = session.get(awx_url + '/api/v2/jobs/' + str(item_id) + '/', headers=headers, allow_redirects=True)
+    item_output['name'] = response.json()['summary_fields']['job_template']['name']
+    item_output['stdout'] = request.url_root + 'api/v1/infos/stdout/' + str(item_id)
+
+  item_output['id'] = response.json()['id']
+  item_output['created'] = response.json()['created']
+  item_output['status'] = response.json()['status']
+  item_output['failed'] = response.json()['failed']
+  item_output['extra_vars'] = loads(response.json()['extra_vars'])
   
-  return wf_output
+  return item_output
+
+def launchAWXItem(awx_url, awx_token, item_type, item_name , payload):
+  """
+  Launch a job template or a workflow template 
+  """
+  if item_type not in ['job_templates', 'workflow_job_templates']:
+    sys.exit("Invalid item_type provided to launchAWXItem : "+item_type)
+
+  headers = {}
+  headers['Authorization'] = "Bearer " + awx_token
+  headers['Content-Type'] = "application/json"
+  headers['Accept'] = "application/json"
+  
+  session = requests.Session()
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path
+  
+  list_item_templates = session.get(awx_url + '/api/v2/'+ item_type + '/', headers=headers, verify=False)
+  res_json=loads(list_item_templates.content)
+  output_dict = [x for x in res_json['results'] if x['name'] == item_name]
+  item_id = output_dict[0]['id']
+  
+  response = session.post(awx_url + '/api/v2/'+ item_type + '/' + str(item_id) + '/launch/', data=dumps(payload), headers=headers, allow_redirects=True, verify=False)
+  
+  # get item status
+  item_output = {}
+  item_output['id'] = response.json()['workflow_job']
+  item_output['response_code'] = response.status_code
+  return item_output
+
+def getAWXStdout(awx_url, awx_token, item_id):
+  """
+  Retrieve the output of a Job id 
+  """
+  headers = {}
+  headers['Authorization'] = "Bearer " + awx_token
+  headers['Content-Type'] = "application/json"
+  headers['Accept'] = "application/json"
+  
+  session = requests.Session()
+  session.trust_env = False #disable proxy
+  session.verify = False # set SSL CA path
+  
+  # check id is a job
+  check_job_id = session.get(awx_url + '/api/v2/jobs/' + str(item_id) + '/', headers=headers)
+  
+  if check_job_id.status_code != 200:
+    return "The id " + str(item_id) + " is not a valid job id."
+  
+  response = session.get(awx_url + '/api/v2/jobs/' + str(item_id) + '/stdout/', headers=headers, allow_redirects=True)
+  job_stdout = response.json()['content']
+  
+  return job_stdout #.replace('\n','<br />')
