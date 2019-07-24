@@ -3,11 +3,18 @@
 import requests, sys
 from json import dumps, loads
 from flask import request
+from awx_api import config
 
-def checkAWXconnection(awx_url, awx_token):
+def checkAWXconnection(awx_url):
   """
   Check the connection to AWX 
   """
+  conf = config.readConfig()
+  if conf == 1:
+    return 'Internal Error : Missing configuration : awx_token'
+  else:
+    awx_token = conf['awx_token']
+  
   headers = {}
   headers['Authorization'] = "Bearer " + awx_token
   headers['Content-Type'] = "application/json"
@@ -139,3 +146,4 @@ def getAWXStdout(awx_url, awx_token, item_id):
   job_stdout = response.json()['content']
   
   return job_stdout #.replace('\n','<br />')
+

@@ -10,7 +10,7 @@ import requests
 # import ldap
 import logging
 import os, sys, re
-from awx_api import common
+from awx_api import common, config
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -29,8 +29,17 @@ logger.addHandler(ch)
 logger.addHandler(fh)
 
 logger.info('================================================================================')
-logger.info('=                               AWX PORTAL                                    =')
+logger.info('=                               AWX PORTAL                                     =')
 logger.info('================================================================================')
+
+missing_config = True
+conf = config.readConfig()
+if conf != 1:
+  awx_token = conf['awx_token']
+  missing_config = False
+else: # ONLY FOR LOCAL TESTING PURPOSE
+    # awx_token = 'rDxTKN2vgQYMNvHjatvEFQdcxp8DHT' # local awx admin test token
+    awx_token=''
 
 if "AWX_URL" in os.environ:
   awx_url = os.environ['AWX_URL']
@@ -44,27 +53,29 @@ if matching:
     env = matching.group(3)
 else:
   env = 'LOCAL'
-if "AWX_TOKEN" in os.environ:
-  awx_token = os.environ['AWX_TOKEN']
-else:
-  awx_token = 'rDxTKN2vgQYMNvHjatvEFQdcxp8DHT' # local awx admin test token
 
 app = Flask(__name__,template_folder='./templates/')
 app.config['SECRET_KEY'] = 'apple pie, because why not.'
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1')
-api = Api(blueprint, version='1.0', title='GIAC API for ' + env.upper(), description='[ <a href="/">HOME</a> ] [ Connected to AWX : <a href="'+awx_url+'">' + env.upper() + '</a> ]')
+check_con = common.checkAWXconnection(awx_url=awx_url)
+api = Api(blueprint,
+  version='1.0', 
+  title='GIAC API for ' + env.upper(), 
+  description='[ <a href="/">HOME</a> ] [ Connected to AWX : <a href="'+awx_url+'">' + env.upper() + '</a> ]')
+
 ns_onpremise = api.namespace('onpremise', description='Operation for VM on VMWare')
 ns_azure = api.namespace('azure', description='Operation for VM on Azure')
 ns_infos = api.namespace('infos', description="Jobs or Workflows informations")
 app.register_blueprint(blueprint)
 
 # check AWX connection
-check_res = common.checkAWXconnection(awx_url=awx_url, awx_token=awx_token)
+check_res = common.checkAWXconnection(awx_url=awx_url)
 if check_res != 200:
-  logger.critical('Impossible to connect to AWX [' + awx_url + ']')
-  sys.exit("Impossible to connect to AWX [" + awx_url + "]")
+  logger.error('Impossible to connect to AWX [' + awx_url + ']')
+  missing_config = True
 else:
   logger.info("Connected to " + env.upper() + "AWX [" + awx_url + "]")
+  missing_config = False
 logger.info("AWX Portal successfully started.")
 
 class CreateVMForm(FlaskForm):
@@ -105,20 +116,30 @@ class GetInfosForm(FlaskForm):
   item_id = IntegerField('Id', validators=[validators.DataRequired()])
   getinfos_button = SubmitField('Get Infos')
 
-class ResetForm(FlaskForm):
-  resetdb = SubmitField(label='ResetDB')
+
 
 @app.route('/', methods=['POST','GET'])
 def home():
   mots = ["Bonjour", "à", "toi,", "anonyme citoyen."]
-  resetform = ResetForm()
   createvmform = CreateVMForm()
   createazvmform = CreateAzureVMForm()
   deletevmform = DeleteVMForm()
   deleteazvmform = DeleteAzureVMForm()
   getinfosform = GetInfosForm()
   
+  missing_config = True
+  conf = config.readConfig()
+  if conf != 1:
+    missing_config = False
+
   if createvmform.create_button.data:
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      return 'Internal Error : Missing configuration : awx_token'
+    
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Impossible to connect to AWX [' + awx_url + ']'
     
     extra_vars = {}
     payload = {}
@@ -134,11 +155,19 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
-    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-    return redirect('/#flash')
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
+    # flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    # return redirect('/#flash')
+    return redirect('/api/v1/infos/' + str(result['id']))
   
   elif deletevmform.delete_button.data:
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      return 'Internal Error : Missing configuration : awx_token'
+    
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Impossible to connect to AWX [' + awx_url + ']'
     
     extra_vars = {}
     payload = {}
@@ -147,11 +176,19 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
-    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-    return redirect('/#flash')
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
+    # flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    # return redirect('/#flash')
+    return redirect('/api/v1/infos/' + str(result['id']))
 
   elif createazvmform.createaz_button.data:
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      return 'Internal Error : Missing configuration : awx_token'
+    
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Impossible to connect to AWX [' + awx_url + ']'
     
     extra_vars = {}
     payload = {}
@@ -165,12 +202,19 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
-    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-
-    return redirect('/#flash')
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
+    # flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    # return redirect('/#flash')
+    return redirect('/api/v1/infos/' + str(result['id']))
 
   elif deleteazvmform.deleteaz_button.data:
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      return 'Internal Error : Missing configuration : awx_token'
+    
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Impossible to connect to AWX [' + awx_url + ']'
     
     extra_vars = {}
     payload = {}
@@ -179,26 +223,75 @@ def home():
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    result = common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='job_templates', item_name='Remove azure VM', payload=payload)
-    flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
-    return redirect('/#flash')
+    result = common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='job_templates', item_name='Remove azure VM', payload=payload)
+    # flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
+    # return redirect('/#flash')
+    return redirect('/api/v1/infos/' + str(result['id']))
 
   elif getinfosform.getinfos_button.data:
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      return 'Internal Error : Missing configuration : awx_token'
+    
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Impossible to connect to AWX [' + awx_url + ']'
+    
     logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.item_id.data))
-    result = common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, item_id=getinfosform.item_id.data)
+    result = common.getAWXInfos(awx_url=awx_url, awx_token=conf['awx_token'], item_id=getinfosform.item_id.data)
     flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     return redirect('/api/v1/infos/' + str(getinfosform.item_id.data))
 
   else:
-    return render_template('index.html', 
-      titre=env.upper() + " GIAC Portal",
-      mots=mots,
-      form=createvmform,
-      createazvmform=createazvmform,
-      resetform=resetform,
-      deletevmform=deletevmform,
-      deleteazvmform=deleteazvmform,
-      getinfosform=getinfosform)
+    if missing_config:
+      logger.error('Missing configuration : awx_token')
+      flash('ERROR : Missing configuration : awx_token')
+      return redirect('/config')
+    else:
+      check_con = common.checkAWXconnection(awx_url=awx_url)
+      if check_con != 200:
+        logger.error('Impossible to connect to AWX [' + awx_url + ']')
+        missing_config = True
+        connection_ok = False
+      else:
+        connection_ok = True
+
+      return render_template('index.html', 
+        titre=env.upper() + " GIAC Portal",
+        connection_ok=connection_ok,
+        mots=mots,
+        form=createvmform,
+        createazvmform=createazvmform,
+        deletevmform=deletevmform,
+        deleteazvmform=deleteazvmform,
+        getinfosform=getinfosform)
+
+@app.route('/config', methods=['POST','GET'])
+def config_awx():
+  class ConfigForm(FlaskForm):
+    config_token = config.readConfig()
+    if config_token != 1:
+      # TODO : secure access
+      # awx_token = StringField('AWX Token', validators=[validators.DataRequired()], default=config_token['awx_token'])
+      awx_token = StringField('AWX Token', validators=[validators.DataRequired()])
+    else:
+      awx_token = StringField('AWX Token', validators=[validators.DataRequired()])
+    save_button = SubmitField(label='Save')
+  
+  configform = ConfigForm()
+  if configform.save_button.data:
+    config.writeConfig(awx_token=configform.awx_token.data)
+    awx_token = config.readConfig()['awx_token']
+    return redirect('/')
+  else:
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      logger.error('Impossible to connect to AWX [' + awx_url + ']')
+      missing_config = True
+      connection_ok = False
+    else:
+      connection_ok = True
+    return render_template('config.html', form=configform, connection_ok=connection_ok, awx_url=awx_url)
 
 create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
   'vmname': fields.String(description='The name of the VM'),
@@ -245,8 +338,16 @@ class GetInfos(Resource):            #  Create a RESTful resource
     """
     Get infos from a job or a workflow
     """
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+    
     logger.info('Getting information for the following AWX job or workflow : ' + str(id))
-    return common.getAWXInfos(awx_url=awx_url, awx_token=awx_token, item_id=id)
+    return common.getAWXInfos(awx_url=awx_url, awx_token=conf['awx_token'], item_id=id)
 
 @ns_infos.route('/stdout/<int:id>')
 @ns_infos.doc(params={'id': 'AWX Job Id'})
@@ -256,8 +357,16 @@ class GetStdout(Resource):            #  Create a RESTful resource
     """
     Get the standard output from a job
     """
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+
     logger.info('Getting stdout for the following AWX job : ' + str(id))
-    return Response(common.getAWXStdout(awx_url=awx_url, awx_token=awx_token, item_id=id), mimetype='text/plain') 
+    return Response(common.getAWXStdout(awx_url=awx_url, awx_token=conf['awx_token'], item_id=id), mimetype='text/plain') 
 
 @ns_onpremise.route('/')
 class OnPremise(Resource):            #  Create a RESTful resource
@@ -266,7 +375,14 @@ class OnPremise(Resource):            #  Create a RESTful resource
     """
     Create a VM on premise on VMWare
     """
-
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+    
     extra_vars = {}
     payload = {}
     extra_vars['target_env'] = api.payload['target_env']
@@ -281,13 +397,21 @@ class OnPremise(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
   
   @ns_onpremise.expect(delete_onprem_model)
   def delete(self):
     """
     Delete a VM on premise on VMWare
     """
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+    
     extra_vars = {}
     payload = {}
     extra_vars['target_env'] = api.payload['target_env']
@@ -295,7 +419,7 @@ class OnPremise(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
-    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Delete Windows VM On Premise', payload=payload)
 
 @ns_azure.route('/')
 class Azure(Resource):            #  Create a RESTful resource
@@ -304,7 +428,14 @@ class Azure(Resource):            #  Create a RESTful resource
     """
     Create a VM in Azure cloud from an image
     """
-
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+    
     extra_vars = {}
     payload = {}
     extra_vars['resource_group'] = api.payload['vm_resourcegroup']
@@ -317,13 +448,21 @@ class Azure(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating an Azure VM from an image with the following parameters : ' + dumps(payload['extra_vars']))
-    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Create Windows VM On Azure', payload=payload)
   
   @ns_azure.expect(delete_azurevm_model)
   def delete(self):
     """
     Delete an Azure VM
     """
+    conf = config.readConfig()
+    if conf == 1:
+      logger.error('Missing configuration')
+      return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
+    check_con = common.checkAWXconnection(awx_url=awx_url)
+    if check_con != 200:
+      return 'Internal Error : Impossible to connect to AWX [' + awx_url + ']'
+    
     extra_vars = {}
     payload = {}
     extra_vars['resource_group'] = api.payload['resource_group']
@@ -331,7 +470,7 @@ class Azure(Resource):            #  Create a RESTful resource
     payload['extra_vars'] = extra_vars
 
     logger.info('Deleting an Azure VM with the following parameters : ' + dumps(payload['extra_vars']))
-    return common.launchAWXItem(awx_url=awx_url, awx_token=awx_token, item_type='job_templates', item_name='Remove azure VM', payload=payload)
+    return common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='job_templates', item_name='Remove azure VM', payload=payload)
 
 @app.route('/version')
 def index_version():

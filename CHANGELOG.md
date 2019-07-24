@@ -1,11 +1,15 @@
 # v1.0.0-beta.4
-## 23-july-2019
+## 24-july-2019
 ### Added
 - Portal : Create / Delete Azure VM
+- Portal : Configuration page to set the AWX auth token
+- Portal : Add connection status to AWX
 - API : Create / Delete Azure VM
 - API : Get job template stdout
 ### Enhanced
 - Portal : Renaming tabs
+- Portal : The page title is now a link to the home page
+- Portal : Doing any action now directly display its current status (reloadable to see the evolution)
 - Common : Massive code simplification
 - Common : Move getAWXInfos function from onpremise lib to common lib
 - Common : Add the ability to request jobs infos in getAWXInfos function

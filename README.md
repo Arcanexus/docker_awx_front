@@ -10,7 +10,6 @@ User web portal for AWX
 |-|-|-|
 | **AWX_URL** | AWX base url | |
 | **AWX_TOKEN** | AWX User Token with Write permissions | |
-| **BOUCHON** | Connected to an API Plug for debug ? | False |
 
 # Build and Test
 Run the following commands (warning : use _pip_ and _python_ if running on Windows)
