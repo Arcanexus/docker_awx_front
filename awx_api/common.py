@@ -11,7 +11,7 @@ def checkAWXconnection(awx_url):
   """
   conf = config.readConfig()
   if conf == 1:
-    return 'Internal Error : Missing configuration : awx_token'
+    awx_token = ''
   else:
     awx_token = conf['awx_token']
   
