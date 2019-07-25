@@ -22,7 +22,7 @@
       {% if connection_ok %}
         <font color=green>Connection to AWX : [ <b>OK</b> ]</font>
       {% else %}
-        <font color=red>Connection to AWX : [ <b>KO</b> ]</font>
+        <font color=red>Connection to AWX : [ <b>KO</b> ] ({{ check_con.status_code }} : {{ check_con.reason }})</font>
       {% endif %}
     </p>
     <pre>
