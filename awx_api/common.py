@@ -26,7 +26,10 @@ def checkAWXconnection(awx_url):
   
   check_conn = session.get(awx_url + '/api/v2/workflow_job_templates/', headers=headers, verify=False)
 
-  return check_conn
+  check_conn_output = {}
+  check_conn_output['status_code'] = check_conn.status_code
+  check_conn_output['reason'] = check_conn.reason
+  return check_conn_output
 
 def getAWXInfos(awx_url, awx_token, item_id):
   """
