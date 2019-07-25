@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="utf-8" />
+      <title>AWX Portal configuration</title>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+      
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+
+  <body>
+    <h1>AWX Portal configuration</h1>
+    <p>
+      {% if connection_ok %}
+        <font color=green>Connection to AWX : [ <b>OK</b> ]</font>
+      {% else %}
+        <font color=red>Connection to AWX : [ <b>KO</b> ]</font>
+      {% endif %}
+    </p>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <pre id="flash"><font color="red">
+        {% for message in messages %}
+          {{ message }}
+        {% endfor %}
+      </font></pre>
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+    
+    <div class="container">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs tabbor" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" data-toggle="tab" href="#config">Configuration</a>
+        </li>
+        <li>
+          <a class="nav-link" href="/">Back to home</a>
+        </li>
+        <li >
+          <a class="nav-link" href="/api/v1">API</a>
+        </li>
+      </ul>
+    
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div id="config" class="container tab-pane active tabbor"><br>
+          <h3>Configuration</h3>
+          <p>
+              <form method="POST" action="/config">
+                  <div class="table-responsive"><table class="table table-dark table-striped table-hover">
+                  <thead>
+                      <tr>
+                          <th colspan="4"><center>AWX Portal Configuration</center></th>
+                      </tr>
+                  </thead>
+                  <tr>
+                    <th rowspan="3">Environment parameters</th>
+                    <td>AWX URL : </td><td>{{ awx_url }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.awx_token.label }} : </td><td>{{ form.awx_token(size=30) }}</td>
+                  </tr>
+                  <tr>
+                      <th></th>
+                      <td colspan="2">{{ form.save_button() }}</td>
+                  </tr>
+                  </table></div>
+              </form>
+          </p>
+        </div>
+      </div>
+    </div>        
+  </body>
+</html>
