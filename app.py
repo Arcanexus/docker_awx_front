@@ -72,7 +72,8 @@ app.register_blueprint(blueprint)
 
 # check AWX connection
 check_con = common.checkAWXconnection(awx_url=awx_url)
-if check_con.status_code != "200":
+check_status = check_con.status_code
+if check_status != 200:
   logger.error('Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')')
   missing_config = True
 else:
@@ -140,7 +141,8 @@ def home():
       return 'Internal Error : Missing configuration : awx_token'
     
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -168,7 +170,8 @@ def home():
       return 'Internal Error : Missing configuration : awx_token'
     
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -189,7 +192,8 @@ def home():
       return 'Internal Error : Missing configuration : awx_token'
     
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -215,7 +219,8 @@ def home():
       return 'Internal Error : Missing configuration : awx_token'
     
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -236,7 +241,8 @@ def home():
       return 'Internal Error : Missing configuration : awx_token'
     
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     logger.info('Getting information for the following AWX workflow : ' + str(getinfosform.item_id.data))
@@ -251,7 +257,8 @@ def home():
       return redirect('/config')
     else:
       check_con = common.checkAWXconnection(awx_url=awx_url)
-      if check_con.status_code != "200":
+      check_status = check_con.status_code
+      if check_status != 200:
         logger.error('Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')')
         missing_config = True
         connection_ok = False
@@ -274,7 +281,7 @@ def config_awx():
   class ConfigForm(FlaskForm):
     config_token = config.readConfig()
     if config_token != 1:
-      # TODO : secure access
+      # TODO : secure access before displaying the current token in the interface
       # awx_token = StringField('AWX Token', validators=[validators.DataRequired()], default=config_token['awx_token'])
       awx_token = StringField('AWX Token', validators=[validators.DataRequired()])
     else:
@@ -288,7 +295,8 @@ def config_awx():
     return redirect('/')
   else:
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       logger.error('Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')')
       missing_config = True
       connection_ok = False
@@ -346,7 +354,8 @@ class GetInfos(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     logger.info('Getting information for the following AWX job or workflow : ' + str(id))
@@ -365,7 +374,8 @@ class GetStdout(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
 
     logger.info('Getting stdout for the following AWX job : ' + str(id))
@@ -383,7 +393,8 @@ class OnPremise(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -412,7 +423,8 @@ class OnPremise(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -436,7 +448,8 @@ class Azure(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
@@ -463,7 +476,8 @@ class Azure(Resource):            #  Create a RESTful resource
       logger.error('Missing configuration')
       return 'Internal Error : Missing configuration. Fix it at ' + request.url_root + 'config'
     check_con = common.checkAWXconnection(awx_url=awx_url)
-    if check_con.status_code != "200":
+    check_status = check_con.status_code
+    if check_status != 200:
       return 'Internal Error : Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con.status_code) + ' : ' + check_con.reason + ')'
     
     extra_vars = {}
