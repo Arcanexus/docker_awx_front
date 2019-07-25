@@ -72,10 +72,7 @@ app.register_blueprint(blueprint)
 
 # check AWX connection
 check_con = common.checkAWXconnection(awx_url=awx_url)
-print(check_con)
-print(check_con[1])
-print(common.checkAWXconnection(awx_url=awx_url)['status_code'])
-if common.checkAWXconnection(awx_url=awx_url)['status_code'] != 200:
+if check_con['status_code'] != 200:
   logger.error('Impossible to connect to AWX [' + awx_url + '] ('+ str(check_con['status_code']) + ' : ' + check_con['reason'] + ')')
   missing_config = True
 else:
