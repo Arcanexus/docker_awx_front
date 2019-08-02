@@ -120,10 +120,12 @@ def launchAWXItem(awx_url, awx_token, item_type, item_name , payload):
   
   response = session.post(awx_url + '/api/v2/'+ item_type + '/' + str(item_id) + '/launch/', data=dumps(payload), headers=headers, allow_redirects=True, verify=False)
   
-  # get item status
   item_output = {}
-  item_output['id'] = response.json()['workflow_job']
-  item_output['response_code'] = response.status_code
+  if response.status_code == 400:
+    item_output['error'] = 'Error 400 : ' + response.reason + ' - ' + response.text
+  else: # get item status
+    item_output['id'] = response.json()['workflow_job']
+    item_output['response_code'] = response.status_code
   return item_output
 
 def getAWXStdout(awx_url, awx_token, item_id):
