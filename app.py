@@ -89,9 +89,14 @@ class CreateVMForm(FlaskForm):
   vm_os = SelectField('Operating System', choices=[('Windows2016', 'Windows 2016')], default='Windows2016', validators=[validators.DataRequired()])
   vm_cpu_count = SelectField('CPU Count', choices=[('1','1'), ('2','2'), ('3','3') , ('4', '4')], default='2', validators=[validators.DataRequired()])
   vm_ram_size = SelectField('RAM', choices=[('1024','1024'), ('2048','2048'), ('3072','3072'), ('4096','4096'), ('8192','8192')], default='4096', validators=[validators.DataRequired()])
-  vm_disk_size = IntegerField('System Disk Size', default='50', validators=[validators.DataRequired(), validators.Regexp('^\d+$', message="Invalid format")])
+  vm_disks = StringField('VM disk list', default='C,SYSTEM,50;', validators=[validators.DataRequired(), validators.Regexp('^([C-Zc-z],\w+,\d+;)+$', message="Invalid format")])
   vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
-  vm_count = IntegerField('Count', default=1, validators=[validators.DataRequired(), validators.Regexp('^\d+$', message="Invalid format")])
+  vm_cluster_vmware = SelectField('Cluster VMware', choices=[('vRA Ressource Cluster','vRA Ressource Cluster'), ('DTCA Dev Hom Cluster','DTCA Dev Hom Cluster'), ('DTCA Production Cluster','DTCA Production Cluster')], default='vRA Ressource Cluster', validators=[validators.DataRequired()])
+  vm_datastore = SelectField('Datastore', choices=[('DTCB_HDS_G800_DatastoreCluster','DTCB_HDS_G800_DatastoreCluster'), ('DTCA_HDS_SD1_GOLD-','DTCA_HDS_SD1_GOLD-'), ('DTCA_HDS_SD1_GOLD+','DTCA_HDS_SD1_GOLD+')], default='DTCB_HDS_G800_DatastoreCluster', validators=[validators.DataRequired()])
+  vm_vlanvcenter = SelectField('VLAN VCenter', choices=[('Prod 10.22','Prod 10.22'), ('Dev 10.22','Dev 10.22')], default='Prod 10.22', validators=[validators.DataRequired()])
+  vm_vlannetbox = SelectField('VLAN NetBox', choices=[('LAN_PROD_DRP','LAN_PROD_DRP'), ('LAN-PROD','LAN-PROD'), ('LAN-DEV-HOM-PN','LAN-DEV-HOM-PN')], default='LAN_PROD_DRP', validators=[validators.DataRequired()])
+  vm_gateway = SelectField('IP Gateway', choices=[('10.22.192.1','10.22.192.1'), ('10.22.160.1','10.22.160.1'), ('10.22.196.1','10.22.196.1')], default='10.22.192.1', validators=[validators.DataRequired()])
+  vm_datacenter = SelectField('Datacenter name', choices=[('DTCA','DTCA'), ('DTCB','DTCB')], default='DTCB', validators=[validators.DataRequired()])
   create_button = SubmitField('Create On Premise VM')
 
 class CreateAzureVMForm(FlaskForm):
@@ -99,7 +104,8 @@ class CreateAzureVMForm(FlaskForm):
   vm_os = SelectField('Operating System', choices=[('Windows2016', 'Windows 2016')], default='Windows2016', validators=[validators.DataRequired()])
   vm_name = StringField('VM Name', validators=[validators.Length(min=0, max=15, message="VM name has 15 characters max.")])
   vm_resourcegroup = StringField('Resource group', validators=[validators.DataRequired()])
-  vm_image = StringField('Source image name', validators=[validators.DataRequired()])
+  vm_default_image = SelectField('Base image name', choices=[('Windows2016', 'Windows 2016'), ('Windows2019', 'Windows 2019'), ('Custom', 'Custom image')])
+  vm_image = StringField('Source image name')
   vm_size = SelectField('VM Size',choices=[('Standard_A2_v2', 'Standard_A2_v2'),  ('Standard_A8_v2', 'Standard_A8_v2'),  ('Standard_A8m_v2', 'Standard_A8m_v2'),  ('Standard_B8ms', 'Standard_B8ms'),  ('Standard_D2_v3', 'Standard_D2_v3'),  ('Standard_D4_v3', 'Standard_D4_v3'),  ('Standard_DS12_v2', 'Standard_DS12_v2'),  ('Standard_DS4_v2', 'Standard_DS4_v2'),  ('Standard_DS5_v2', 'Standard_DS5_v2'),  ('Standard_E16s_v3', 'Standard_E16s_v3'),  ('Standard_E64is_v3', 'Standard_E64is_v3'),  ('Standard_F16s_v2', 'Standard_F16s_v2'),  ('Standard_F8s', 'Standard_F8s'),  ('Standard_B2ms', 'Standard_B2ms'),  ('Standard_B1ms', 'Standard_B1ms'),  ('Standard_B2s', 'Standard_B2s'),  ('Standard_DS13_v2', 'Standard_DS13_v2'),  ('Standard_DS14_v2', 'Standard_DS14_v2'),  ('Standard_D3_v2', 'Standard_D3_v2'),  ('Standard_DS1_v2', 'Standard_DS1_v2'),  ('Standard_DS2_v2', 'Standard_DS2_v2')], validators=[validators.DataRequired()])
   vm_dc = SelectField('DC', choices=[('CTO', 'CTO'), ('Meteor', 'Meteor'), ('Gemstone', 'Gemstone'), ('Power', 'Power'), ('Bulk', 'Bulk'), ('Gas', 'Gas'), ('Transversal', 'Transversal'), ('GSSNGE', 'GSSNGE'), ('Infra', 'Infra')], validators=[validators.DataRequired()])
   createaz_button = SubmitField('Create Azure VM')
@@ -153,15 +159,24 @@ def home():
     extra_vars['operating_system'] = createvmform.vm_os.data
     extra_vars['cpu_count'] = int(createvmform.vm_cpu_count.data)
     extra_vars['ram_size'] = int(createvmform.vm_ram_size.data)
-    extra_vars['disk_size'] = str(createvmform.vm_disk_size.data)
+    extra_vars['disks'] = str(createvmform.vm_disks.data)
     extra_vars['vmname'] = createvmform.vm_name.data
+    extra_vars['cluster_vmware'] = createvmform.vm_cluster_vmware.data
+    extra_vars['datastore'] = createvmform.vm_datastore.data
+    extra_vars['vlanvcenter'] = createvmform.vm_vlanvcenter.data
+    extra_vars['vlannetbox'] = createvmform.vm_vlannetbox.data
+    extra_vars['gateway'] = createvmform.vm_gateway.data
+    extra_vars['datacenter'] = createvmform.vm_datacenter.data
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
     result = common.launchAWXItem(awx_url=awx_url, awx_token=conf['awx_token'], item_type='workflow_job_templates', item_name='Create Windows VM On Premise', payload=payload)
     # flash('{}'.format(dumps(result, indent=4, sort_keys=True)))
     # return redirect('/#flash')
-    return redirect('/api/v1/infos/' + str(result['id']))
+    if 'error' in result:
+      return result['error']
+    else:
+      return redirect('/api/v1/infos/' + str(result['id']))
   
   elif deletevmform.delete_button.data:
     if missing_config:
@@ -198,6 +213,7 @@ def home():
     extra_vars = {}
     payload = {}
     extra_vars['resource_group'] = createazvmform.vm_resourcegroup.data
+    extra_vars['default_image'] = createazvmform.vm_default_image.data
     extra_vars['image'] = createazvmform.vm_image.data
     extra_vars['size'] = createazvmform.vm_size.data
     extra_vars['owner'] = createazvmform.vm_owner_gaia.data
@@ -312,13 +328,20 @@ create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
   'operating_system': fields.String(required=True, description='The VM Operatig System', example='Windows2016', enum=['Windows2016']),
   'cpu_count': fields.Integer(required=True, description='The number of CPU of the VM', min=1, max=8),
   'ram_size': fields.Integer(required=True, description='The RAM size of the VM', min=1024, max=32768),
-  'disk_size': fields.String(required=True, description='The VM disk size')
+  'disks': fields.String(required=True, description='The VM disk list'),
+  'cluster_vmware': fields.String(required=True, description='The VMware Cluster'),
+  'datastore': fields.String(required=True, description='The VMware datastore'),
+  'vlanvcenter': fields.String(required=True, description='The VLAN in VMware'),
+  'vlannetbox': fields.String(required=True, description='The VLAN in NetBox'),
+  'gateway': fields.String(required=True, description='The IP Gateway'),
+  'datacenter': fields.String(required=True, description='The datacenter in VMware')
 })
 
-create_azurevm_model = ns_azure.model('Create an azure VM from an image', {
+create_azurevm_model = ns_azure.model('Create an azure VM', {
   'vm_dc': fields.String(required=True, description='The name of the DC', enum=['CTO', 'Meteor', 'Gemstone', 'Power', 'Bulk', 'Gas', 'Transversal', 'GSSNGE', 'Infra']),
   'vm_owner_gaia': fields.String(required=True, description="The owner's Gaia", pattern='^[a-zA-Z]{2}\d{4}(-(a|o)|)$'),
   'vm_resourcegroup': fields.String(required=True, description='The name of the Azure Resource Group'),
+  'vm_default_image': fields.String(required=True, description='Base image to use, or custom for a self defined image', enum=['Windows2016', 'Windows2019', 'Custom']),
   'vm_image': fields.String(required=True, description='The name of image to use from the Resource Group'),
   'vm_os': fields.String(required=True, description='The VM Operatig System', example='Windows2016', enum=['Windows2016']),
   'vm_size': fields.String(required=True, description='The size of the Azure VM', enum=['Standard_A2_v2', 'Standard_A8_v2', 'Standard_A8m_v2', 'Standard_B8ms', 'Standard_D2_v3', 'Standard_D4_v3', 'Standard_DS12_v2', 'Standard_DS4_v2', 'Standard_DS5_v2', 'Standard_E16s_v3', 'Standard_E64is_v3', 'Standard_F16s_v2', 'Standard_F8s', 'Standard_B2ms', 'Standard_B1ms', 'Standard_B2s', 'Standard_DS13_v2', 'Standard_DS14_v2', 'Standard_D3_v2', 'Standard_DS1_v2', 'Standard_DS2_v2']),
@@ -405,8 +428,14 @@ class OnPremise(Resource):            #  Create a RESTful resource
     extra_vars['operating_system'] = api.payload['operating_system']
     extra_vars['cpu_count'] = int(api.payload['cpu_count'])
     extra_vars['ram_size'] = int(api.payload['ram_size'])
-    extra_vars['disk_size'] = str(api.payload['disk_size'])
+    extra_vars['disks'] = str(api.payload['disks'])
     extra_vars['vmname'] = api.payload['vmname']
+    extra_vars['cluster_vmware'] = api.payload['cluster_vmware']
+    extra_vars['datastore'] = api.payload['datastore']
+    extra_vars['vlanvcenter'] = api.payload['vlanvcenter']
+    extra_vars['vlannetbox'] = api.payload['vlannetbox']
+    extra_vars['gateway'] = api.payload['gateway']
+    extra_vars['datacenter'] = api.payload['datacenter']
     payload['extra_vars'] = extra_vars
 
     logger.info('Creating a VM on Premise with the following parameters : ' + dumps(payload['extra_vars']))
@@ -454,6 +483,7 @@ class Azure(Resource):            #  Create a RESTful resource
     extra_vars = {}
     payload = {}
     extra_vars['resource_group'] = api.payload['vm_resourcegroup']
+    extra_vars['default_image'] = api.payload['vm_default_image']
     extra_vars['image'] = api.payload['vm_image']
     extra_vars['size'] = api.payload['vm_size']
     extra_vars['owner'] = api.payload['vm_owner_gaia']

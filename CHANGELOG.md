@@ -1,3 +1,9 @@
+# v1.0.0-beta.5
+## 02-august-2019
+### Enhanced
+- Common : New On premise fields for IOT
+- Common : Display errors when constraints are not met
+
 # v1.0.0-beta.4
 ## 24-july-2019
 ### Added

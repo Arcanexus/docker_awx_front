@@ -72,13 +72,37 @@
                     </tr>
                   </thead>
                   <tr>
-                    <th rowspan="2">Environment parameters</th>
+                    <th rowspan="8">Environment parameters</th>
                     <td>{{ form.target_env.label }} : </td>
                     <td>{{ form.target_env() }}</td>
                   </tr>
                   <tr>
                     <td>{{ form.target_site.label }} : </td>
                     <td>{{ form.target_site() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_cluster_vmware.label }} : </td>
+                    <td>{{ form.vm_cluster_vmware() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_datastore.label }} : </td>
+                    <td>{{ form.vm_datastore() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_vlanvcenter.label }} : </td>
+                    <td>{{ form.vm_vlanvcenter() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_vlannetbox.label }} : </td>
+                    <td>{{ form.vm_vlannetbox() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_gateway.label }} : </td>
+                    <td>{{ form.vm_gateway() }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ form.vm_datacenter.label }} : </td>
+                    <td>{{ form.vm_datacenter() }}</td>
                   </tr>
                   <tr>
                     <th rowspan="2">Application parameters</th>
@@ -107,12 +131,12 @@
                     <td>{{ form.vm_ram_size() }}MB</td>
                   </tr>
                   <tr>
-                    <td>{{ form.vm_disk_size.label }} : </td>
-                    <td>{{ form.vm_disk_size(size=3) }}GB</td>
+                    <td>{{ form.vm_disks.label }} : </td>
+                    <td>{{ form.vm_disks(size=50) }}</td>
                   </tr>
 
                   <tr>
-                    <th></th><!-- <th>{{ form.vm_count.label }} : {{ form.vm_count(size=3) }}</th> -->
+                    <th></th>
                     <td colspan="2">{{ form.create_button() }}</td>
                   </tr>
                 </table>
@@ -187,7 +211,7 @@
                   <thead>
                     <tr>
                       <th colspan="4">
-                        <center>Create Azure VM from image</center>
+                        <center>Create Azure VM</center>
                       </th>
                     </tr>
                   </thead>
@@ -204,6 +228,10 @@
                     <th rowspan="5">VM parameters</th>
                     <td>{{ createazvmform.vm_resourcegroup.label }} : </td>
                     <td>{{ createazvmform.vm_resourcegroup(size=20) }}</td>
+                  </tr>
+                  <tr>
+                    <td>{{ createazvmform.vm_default_image.label }} : </td>
+                    <td>{{ createazvmform.vm_default_image() }}</td>
                   </tr>
                   <tr>
                     <td>{{ createazvmform.vm_image.label }} : </td>
