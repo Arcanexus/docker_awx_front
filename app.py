@@ -84,8 +84,8 @@ class CreateVMForm(FlaskForm):
   target_env = SelectField('Target Environment', choices=[('Development', 'Development'), ('Homologation', 'Homologation'), ('Production', 'Production')], default='Development', validators=[validators.DataRequired()])
   target_site = SelectField('Target Site', choices=[('PN1','PN1'), ('PN2','PN2'), ('SD1','SD1')], default='PN1', validators=[validators.DataRequired()])
   app_trigram = StringField('App Trigram', validators=[validators.DataRequired(), validators.Length(min=3, max=3, message="App Trigram must contain 3 characters")])
-  vm_owner_domain = SelectField('Owner', choices=[('D12','D12'), ('GSY','GSY')], default='D12', validators=[validators.DataRequired()])
-  vm_owner_gaia = StringField('Gaia', validators=[validators.DataRequired(), validators.Regexp('^[a-zA-Z]{2}\d{4}(-(a|o)|)$', message="Username format : XX1234(-a|-o)")])
+  vm_ad_domain = SelectField('Domain', choices=[('GSY.ad.gaselys.com','GSY'), ('d12.tes.local','D12')], default='GSY', validators=[validators.DataRequired()])
+  vm_owner_gaia = StringField('Owner', validators=[validators.DataRequired(), validators.Regexp('^[a-zA-Z]{2}\d{4}(-(a|o)|)$', message="Username format : XX1234(-a|-o)")])
   vm_os = SelectField('Operating System', choices=[('Windows2016', 'Windows 2016')], default='Windows2016', validators=[validators.DataRequired()])
   vm_cpu_count = SelectField('CPU Count', choices=[('1','1'), ('2','2'), ('3','3') , ('4', '4')], default='2', validators=[validators.DataRequired()])
   vm_ram_size = SelectField('RAM', choices=[('1024','1024'), ('2048','2048'), ('3072','3072'), ('4096','4096'), ('8192','8192')], default='4096', validators=[validators.DataRequired()])
@@ -156,6 +156,7 @@ def home():
     extra_vars['site'] = createvmform.target_site.data
     extra_vars['application_trigram'] = createvmform.app_trigram.data
     extra_vars['owner'] = createvmform.vm_owner_gaia.data
+    extra_vars['ad_domain'] = createvmform.vm_ad_domain.data
     extra_vars['operating_system'] = createvmform.vm_os.data
     extra_vars['cpu_count'] = int(createvmform.vm_cpu_count.data)
     extra_vars['ram_size'] = int(createvmform.vm_ram_size.data)
@@ -325,6 +326,7 @@ create_onprem_model = ns_onpremise.model('Create a VM On Premise', {
   'site': fields.String(required=True, description='The target site', enum=['PN1', 'PN2', 'SD1']),
   'application_trigram': fields.String(required=True, description='The target environment', min_length=3, max_length=3),
   'owner': fields.String(required=True, description='The VM owner Gaia', pattern='^[a-zA-Z]{2}\d{4}(-(a|o)|)$'),
+  'ad_domain': fields.String(required=True, description='The VM domain', enum=['GSY.ad.gaselys.com', 'd12.tes.local']),
   'operating_system': fields.String(required=True, description='The VM Operatig System', example='Windows2016', enum=['Windows2016']),
   'cpu_count': fields.Integer(required=True, description='The number of CPU of the VM', min=1, max=8),
   'ram_size': fields.Integer(required=True, description='The RAM size of the VM', min=1024, max=32768),
@@ -425,6 +427,7 @@ class OnPremise(Resource):            #  Create a RESTful resource
     extra_vars['site'] = api.payload['site']
     extra_vars['application_trigram'] = api.payload['application_trigram']
     extra_vars['owner'] = api.payload['owner']
+    extra_vars['ad_domain'] = api.payload['ad_domain']
     extra_vars['operating_system'] = api.payload['operating_system']
     extra_vars['cpu_count'] = int(api.payload['cpu_count'])
     extra_vars['ram_size'] = int(api.payload['ram_size'])

@@ -105,7 +105,7 @@
                     <td>{{ form.vm_datacenter() }}</td>
                   </tr>
                   <tr>
-                    <th rowspan="2">Application parameters</th>
+                    <th rowspan="3">Application parameters</th>
                     <td>{{ form.app_trigram.label }} : </td>
                     <td>{{ form.app_trigram(size=3) }}</td>
                   </tr>
@@ -114,9 +114,13 @@
                     <td>{{ form.vm_name(size=20) }}</td>
                   </tr>
                   <tr>
-                    <th rowspan="5">VM parameters</th>
-                    <td>{{ form.vm_owner_domain.label }} : </td>
+                    <td>{{ form.vm_owner_gaia.label }} : </td>
                     <td>{{ form.vm_owner_gaia(size=20) }}</td>
+                  </tr>
+                  <tr>
+                    <th rowspan="5">VM parameters</th>
+                    <td>{{ form.vm_ad_domain.label }} : </td>
+                    <td>{{ form.vm_ad_domain() }}</td>
                   </tr>
                   <tr>
                     <td>{{ form.vm_os.label }} : </td>

@@ -1,0 +1,25 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+variables:
+  dockerId: giac  # Replace with your Docker ID for Docker Hub or the admin user name for the Azure Container Registry
+  imageName: portal  # Replace with the name of the image you want to publish
+  usr: user
+  pswd: pwd
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: docker build -t $(dockerId)/$(imageName) .  
+  displayName: 'Docker Build'
+
+# - script: |
+#     docker login -u $(usr) -p $(pswd) harbor.gem.myengie.com
+#     docker push harbor.gem.myengie.com/$(dockerId)/$(imageName)
+#   displayName: 'Docker Push to Harbor'

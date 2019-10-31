@@ -1,3 +1,8 @@
+# v1.0.0-beta.6
+## 31-october-2019
+### Add
+- Common : Manage D12 On premise VM creation
+
 # v1.0.0-beta.5
 ## 02-august-2019
 ### Enhanced
